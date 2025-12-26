@@ -25,6 +25,10 @@ export default function DashboardPage() {
       </div>
     );
   }
+  
+  if (!user) {
+    return null; // or some other placeholder
+  }
 
   return (
     <div className="container py-12 space-y-8">
