@@ -23,7 +23,7 @@ const QuizCard = ({ quiz }: QuizCardProps) => {
   const Icon = categoryIcons[quiz.category] || Brain;
 
   return (
-    <Card className="flex flex-col overflow-hidden h-full transition-all hover:shadow-lg hover:-translate-y-1">
+    <Card className="flex flex-col overflow-hidden h-full transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-2 hover:scale-105">
       {quizImage && (
         <div className="relative h-48 w-full">
           <Image
