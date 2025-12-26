@@ -1,0 +1,303 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the QuizWhiz platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "username": {
+          "type": "string",
+          "description": "The username of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        },
+        "premium": {
+          "type": "boolean",
+          "description": "Indicates whether the user has a premium subscription."
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email"
+      ]
+    },
+    "Quiz": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Quiz",
+      "type": "object",
+      "description": "Represents a quiz available on the QuizWhiz platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the quiz."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the quiz."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the quiz."
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the quiz (e.g., Geography, History)."
+        },
+        "isPremium": {
+          "type": "boolean",
+          "description": "Indicates whether the quiz is premium only."
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "category"
+      ]
+    },
+    "Question": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Question",
+      "type": "object",
+      "description": "Represents a question within a quiz.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the question."
+        },
+        "quizId": {
+          "type": "string",
+          "description": "Reference to Quiz. (Relationship: Quiz 1:N Question)"
+        },
+        "text": {
+          "type": "string",
+          "description": "The text of the question."
+        },
+        "options": {
+          "type": "array",
+          "description": "An array of possible answer options.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "correctAnswerIndex": {
+          "type": "number",
+          "description": "The index of the correct answer in the options array."
+        }
+      },
+      "required": [
+        "id",
+        "quizId",
+        "text",
+        "options",
+        "correctAnswerIndex"
+      ]
+    },
+    "QuizAttempt": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "QuizAttempt",
+      "type": "object",
+      "description": "Represents a user's attempt at a quiz.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the quiz attempt."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N QuizAttempt)"
+        },
+        "quizId": {
+          "type": "string",
+          "description": "Reference to Quiz. (Relationship: Quiz 1:N QuizAttempt)"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "The timestamp when the quiz attempt started.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "The timestamp when the quiz attempt ended.",
+          "format": "date-time"
+        },
+        "score": {
+          "type": "number",
+          "description": "The user's score on the quiz attempt."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "quizId",
+        "startTime",
+        "endTime",
+        "score"
+      ]
+    },
+    "PremiumSubscription": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PremiumSubscription",
+      "type": "object",
+      "description": "Represents a user's premium subscription details.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the subscription."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N PremiumSubscription)"
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The start date of the subscription.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The end date of the subscription.",
+          "format": "date-time"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "The payment method used for the subscription."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "startDate",
+        "endDate",
+        "paymentMethod"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Access is restricted to the user themselves.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/quizzes/{quizId}",
+        "definition": {
+          "entityName": "Quiz",
+          "schema": {
+            "$ref": "#/backend/entities/Quiz"
+          },
+          "description": "Stores quiz metadata. Publicly accessible for listing, but write access is restricted to admins.",
+          "params": [
+            {
+              "name": "quizId",
+              "description": "The unique identifier for the quiz."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/quizzes/{quizId}/questions/{questionId}",
+        "definition": {
+          "entityName": "Question",
+          "schema": {
+            "$ref": "#/backend/entities/Question"
+          },
+          "description": "Stores questions for a quiz. Inherits authorization from the parent quiz. Admin rights checked when Quiz is created.",
+          "params": [
+            {
+              "name": "quizId",
+              "description": "The unique identifier for the quiz."
+            },
+            {
+              "name": "questionId",
+              "description": "The unique identifier for the question."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/quizAttempts/{quizAttemptId}",
+        "definition": {
+          "entityName": "QuizAttempt",
+          "schema": {
+            "$ref": "#/backend/entities/QuizAttempt"
+          },
+          "description": "Stores quiz attempts for a user. Enforces ownership; only the user can read/write their attempts.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "quizAttemptId",
+              "description": "The unique identifier for the quiz attempt."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/premiumSubscriptions/{subscriptionId}",
+        "definition": {
+          "entityName": "PremiumSubscription",
+          "schema": {
+            "$ref": "#/backend/entities/PremiumSubscription"
+          },
+          "description": "Stores premium subscription details for a user. Enforces ownership; only the user can read/write their subscriptions.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "subscriptionId",
+              "description": "The unique identifier for the premium subscription."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "roles_admin",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores admin roles. Existence in this collection grants admin privileges for creating quizzes.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the admin user."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support QuizWhiz's features, focusing on secure access and efficient data retrieval.  User data, quizzes, questions, quiz attempts, and premium subscriptions are organized into collections with clear ownership and access rules. The design enforces Authorization Independence by avoiding `get()` calls and denormalizing access control data.  It employs structural segregation by keeping data with different access requirements in separate collections.\n\n1.  **Users Collection:** Stores user profiles.  Access is restricted to the user themselves.\n2.  **Quizzes Collection:** Stores quiz metadata.  Publicly accessible for listing but write access is restricted to admins (represented via a separate `/roles_admin/{uid}` collection).\n3.  **Questions Subcollection:**  Each quiz has a subcollection of questions. Requires the quizId. Questions inherit the authorization of the parent Quiz document. No `get()` calls are required due to admin role being checked at top level.\n4.  **QuizAttempts Subcollection:** Stored under the user's document (e.g., `/users/{userId}/quizAttempts/{quizAttemptId}`).  This enforces ownership; only the user can read/write their attempts.\n5.  **PremiumSubscriptions Subcollection:** Stored under the user's document (e.g., `/users/{userId}/premiumSubscriptions/{subscriptionId}`). This enforces ownership; only the user can read/write their subscriptions.\n6. **Admin Roles:** Uses the `/roles_admin/{uid}` collection to store admin roles. Existence in this collection grants admin privileges for creating quizzes. This avoids storing roles directly on the user document and simplifies security rules.\n\n**Authorization Independence (Denormalization):**\nAdmin rights are determined by the existence of a document in the `/roles_admin/{uid}` collection. When a user creates a quiz, we check if they have such a document.  This avoids the need for complex `get()` calls in the security rules. Since questions are owned by admins at quiz creation, they inherit authorization.\n\n**QAPs (Rules Are Not Filters):**\n*   Secure `list` operations are achieved via structural segregation.  The `quizzes` collection can be listed safely because access to create is controlled by `/roles_admin/{uid}` and individual quiz details are readable.\n*   User-specific data (quiz attempts, premium subscriptions) is stored under the `/users/{userId}` path, ensuring that listing such data requires authentication as the specific user.\n\n**Invariants:**\n*   Ownership of quiz attempts and premium subscriptions is enforced by the hierarchical structure under `/users/{userId}`."
+  }
+}

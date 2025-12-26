@@ -1,0 +1,165 @@
+/**
+ * Core Philosophy: This ruleset enforces a mixed security model tailored for the QuizWhiz app.
+ * User-specific data is protected by a strict ownership model, ensuring users can only access their own information.
+ * Public content, such as quizzes, is readable by everyone but can only be modified by designated administrators.
+ * Admin privileges are managed through a separate, client-read-only collection (`/roles_admin`), preventing unauthorized self-promotion.
+ *
+ * Data Structure: The data is organized hierarchically to reflect ownership and access control.
+ * - /users/{userId}: Contains the core user profile.
+ * - /users/{userId}/quizAttempts/{attemptId}: Nests a user's private quiz history under their own document tree.
+ * - /users/{userId}/premiumSubscriptions/{subId}: Nests a user's sensitive subscription data under their own document tree.
+ * - /quizzes/{quizId}: A top-level collection for publicly accessible quiz data.
+ * - /quizzes/{quizId}/questions/{questionId}: Questions are stored in a subcollection under their respective quiz.
+ * - /roles_admin/{userId}: A top-level collection that acts as an admin role lookup table.
+ *
+ * Key Security Decisions:
+ * - User Isolation: Users cannot list or view other user profiles. All data under `/users/{userId}` is strictly private to that user.
+ * - Admin-Managed Content: All quiz and question content is managed by administrators. The rules use an `exists()` check against the `/roles_admin` collection for all write operations on `/quizzes`.
+ * - Read-Only Roles: The `/roles_admin` collection is read-only from the client side. This is a critical security measure to ensure that admin roles can only be granted by a trusted backend server process.
+ * - Public Read Access: The `/quizzes` collection and its `questions` subcollections are publicly readable to allow any user (signed-in or anonymous) to browse and take quizzes.
+ *
+ * Denormalization for Authorization: Instead of storing an `isAdmin` flag on user documents, we use a separate `/roles_admin/{userId}` collection. A rule can perform a highly efficient `exists()` check on this path to determine admin status without needing to read a user document. This simplifies the rules for `/quizzes` and avoids costly `get()` calls.
+ *
+ * Structural Segregation: Private user data (like quiz attempts) is stored in a completely separate path (`/users/{userId}/...`) from public data (`/quizzes/{quizId}`). This structural choice makes it simple and performant to apply broad security rules; for example, we can secure the entire user data tree with one ownership rule and allow public listing of all quizzes without risk of leaking private information.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions to improve readability and maintainability.
+    
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the authenticated user's UID matches the document's owner ID.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Verifies that a document exists before an update or delete operation.
+     */
+    function isExistingDoc() {
+      return resource != null;
+    }
+
+    /**
+     * Combines ownership and existence checks for secure updates and deletes.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && isExistingDoc();
+    }
+
+    /**
+     * Checks if the user is an admin by verifying the existence of their UID
+     * in the /roles_admin collection. This is a fast and secure check.
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+    
+    /**
+     * Combines admin and existence checks for secure updates and deletes.
+     */
+    function isExistingAdmin() {
+      return isAdmin() && isExistingDoc();
+    }
+
+
+    /**
+     * @description Stores user profiles. A user can create their own profile, and can only read, update, or delete their own document.
+     * @path /users/{userId}
+     * @allow (create) A new user with uid 'user123' creating their own document at `/users/user123`.
+     * @deny (get) User 'user123' trying to read `/users/user456`.
+     * @principle Restricts access to a user's own data tree and enforces self-creation.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Stores a user's quiz attempts. Only the user can create, read, update, or delete their own attempts.
+       * @path /users/{userId}/quizAttempts/{quizAttemptId}
+       * @allow (list) User 'user123' listing all documents at `/users/user123/quizAttempts`.
+       * @deny (create) User 'user456' trying to create an attempt at `/users/user123/quizAttempts/attempt_abc`.
+       * @principle Enforces document ownership within a user's private subcollection.
+       */
+      match /quizAttempts/{quizAttemptId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Stores a user's sensitive premium subscription data. Access is strictly limited to the user themselves.
+       * @path /users/{userId}/premiumSubscriptions/{subscriptionId}
+       * @allow (get) User 'user123' reading their subscription at `/users/user123/premiumSubscriptions/sub_abc`.
+       * @deny (list) User 'user456' trying to list subscriptions at `/users/user123/premiumSubscriptions`.
+       * @principle Enforces document ownership for sensitive, private data.
+       */
+      match /premiumSubscriptions/{subscriptionId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+
+    /**
+     * @description Stores quiz metadata. Quizzes are public and can be read by anyone. Only administrators can create, update, or delete them.
+     * @path /quizzes/{quizId}
+     * @allow (get) Any anonymous or authenticated user reading `/quizzes/geography_quiz`.
+     * @deny (create) A non-admin user trying to create a new quiz.
+     * @principle Separates public read access from role-restricted write access.
+     */
+    match /quizzes/{quizId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isAdmin();
+      allow update: if isExistingAdmin();
+      allow delete: if isExistingAdmin();
+
+      /**
+       * @description Stores the questions for a specific quiz. Questions are public, but can only be managed by administrators.
+       * @path /quizzes/{quizId}/questions/{questionId}
+       * @allow (list) Any user listing all questions for `/quizzes/history_quiz`.
+       * @deny (update) A non-admin user trying to change a question's text.
+       * @principle Inherits the parent document's security model: public reads, admin-only writes.
+       */
+      match /questions/{questionId} {
+        allow get: if true;
+        allow list: if true;
+        allow create: if isAdmin() && request.resource.data.quizId == quizId;
+        allow update: if isExistingAdmin() && request.resource.data.quizId == resource.data.quizId;
+        allow delete: if isExistingAdmin();
+      }
+    }
+    
+    /**
+     * @description Stores a list of admin user IDs. Existence of a document here grants admin privileges. This collection is read-only for clients to prevent privilege escalation.
+     * @path /roles_admin/{userId}
+     * @allow (get) An app function checking if user 'user123' is an admin by reading `/roles_admin/user123`.
+     * @deny (create, update, delete) Any client trying to write to this collection.
+     * @principle Secures role-granting by making it a backend-only operation.
+     */
+    match /roles_admin/{userId} {
+      allow get: if isSignedIn();
+      allow list: if false;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}
