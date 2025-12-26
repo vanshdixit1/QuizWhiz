@@ -15,19 +15,21 @@ import { Timer, Clock } from 'lucide-react';
 
 type QuizPlayerProps = {
   quiz: Quiz;
+  isGenerated?: boolean;
+  timerSettings?: { timerEnabled: boolean, timerDuration: number };
 };
 
 type GameState = 'settings' | 'playing' | 'finished';
 
-export default function QuizPlayer({ quiz }: QuizPlayerProps) {
-  const [gameState, setGameState] = useState<GameState>('settings');
+export default function QuizPlayer({ quiz, isGenerated = false, timerSettings }: QuizPlayerProps) {
+  const [gameState, setGameState] = useState<GameState>(isGenerated ? 'playing' : 'settings');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const [score, setScore] = useState(0);
 
   // Settings
-  const [timerEnabled, setTimerEnabled] = useState(true);
-  const [timerDuration, setTimerDuration] = useState(15);
+  const [timerEnabled, setTimerEnabled] = useState(timerSettings?.timerEnabled ?? true);
+  const [timerDuration, setTimerDuration] = useState(timerSettings?.timerDuration ?? 15);
   const [timeLeft, setTimeLeft] = useState(timerDuration);
   
   const currentQuestion = quiz.questions[currentQuestionIndex];
@@ -47,6 +49,16 @@ export default function QuizPlayer({ quiz }: QuizPlayerProps) {
 
     return () => clearInterval(timer);
   }, [timeLeft, gameState, timerEnabled]);
+  
+  useEffect(() => {
+    if (isGenerated && timerSettings) {
+        setTimerEnabled(timerSettings.timerEnabled);
+        setTimerDuration(timerSettings.timerDuration);
+        setTimeLeft(timerSettings.timerDuration);
+        setGameState('playing');
+    }
+  }, [isGenerated, timerSettings, quiz]);
+
 
   const handleStartQuiz = () => {
     setTimeLeft(timerDuration);
@@ -75,7 +87,7 @@ export default function QuizPlayer({ quiz }: QuizPlayerProps) {
     return <QuizResults score={score} totalQuestions={quiz.questions.length} quizTitle={quiz.title} />;
   }
 
-  if (gameState === 'settings') {
+  if (gameState === 'settings' && !isGenerated) {
     return (
       <div className="container flex items-center justify-center min-h-[calc(100vh-8rem)]">
         <Card className="w-full max-w-lg">
@@ -98,8 +110,9 @@ export default function QuizPlayer({ quiz }: QuizPlayerProps) {
                     <SelectValue placeholder="Time" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="15">15 seconds</SelectItem>
-                    <SelectItem value="30">30 seconds</SelectItem>
+                    <SelectItem value="15">15</SelectItem>
+                    <SelectItem value="30">30</SelectItem>
+                    <SelectItem value="60">60</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

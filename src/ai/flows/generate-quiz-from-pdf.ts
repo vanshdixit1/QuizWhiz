@@ -20,13 +20,28 @@ const GenerateQuizFromPdfInputSchema = z.object({
 });
 export type GenerateQuizFromPdfInput = z.infer<typeof GenerateQuizFromPdfInputSchema>;
 
-const GenerateQuizFromPdfOutputSchema = z.object({
-  quiz: z.string().describe('The generated quiz questions and answers.'),
+const QuestionSchema = z.object({
+    question: z.string(),
+    options: z.array(z.string()),
+    correctAnswer: z.string(),
 });
-export type GenerateQuizFromPdfOutput = z.infer<typeof GenerateQuizFromPdfOutputSchema>;
+
+const GenerateQuizFromPdfOutputSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  questions: z.array(QuestionSchema),
+});
+
+export type GenerateQuizFromPdfOutput = z.infer<typeof GenerateQuizFromPdfOutputSchema> & { id: string; category: string; imageId: string };
 
 export async function generateQuizFromPdf(input: GenerateQuizFromPdfInput): Promise<GenerateQuizFromPdfOutput> {
-  return generateQuizFromPdfFlow(input);
+    const quizData = await generateQuizFromPdfFlow(input);
+    return {
+        ...quizData,
+        id: `ai-pdf-${Date.now()}`,
+        category: 'PDF Quiz',
+        imageId: 'english', // Default image for PDF quizzes
+    };
 }
 
 const prompt = ai.definePrompt({
@@ -34,9 +49,14 @@ const prompt = ai.definePrompt({
   input: {schema: GenerateQuizFromPdfInputSchema},
   output: {schema: GenerateQuizFromPdfOutputSchema},
   prompt: `You are a quiz generator expert. Please generate a quiz with 10 questions based on the content of the PDF document.
+    The quiz should include:
+    - A short, engaging title for the quiz based on the PDF content.
+    - A brief, one-sentence description.
+    - Exactly 10 multiple-choice questions.
+    - Each question must have exactly 4 options.
+    - One of the options must be the correct answer.
 
-   The quiz should cover the key concepts and details from the PDF.
-   The quiz format is question and answer pairs. Mark the correct answer with an asterisk.
+    Return the output as a valid JSON object matching the requested schema. Ensure the 'correctAnswer' string is one of the strings present in the 'options' array for each question.
 
 PDF Content: {{media url=pdfDataUri}}`,
 });
