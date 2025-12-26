@@ -1,14 +1,13 @@
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Mail, Linkedin, Github, Twitter } from 'lucide-react';
+import { Mail, Linkedin, Github } from 'lucide-react';
 import { AnimateOnScroll } from '@/components/animate-on-scroll';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const socialLinks = [
-  { icon: Linkedin, href: '#', name: 'LinkedIn' },
-  { icon: Github, href: '#', name: 'GitHub' },
-  { icon: Twitter, href: '#', name: 'Twitter' },
+  { icon: Linkedin, href: 'https://www.linkedin.com/in/vadix79/', name: 'LinkedIn' },
+  { icon: Github, href: 'https://github.com/vanshdixit1', name: 'GitHub' },
 ];
 
 const AboutPage = () => {
