@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, UserCircle, LogOut, LayoutDashboard, Crown, Star } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
@@ -27,36 +28,50 @@ const navLinks = [
   { href: '/about', label: 'About' },
 ];
 
+const NavLinks = ({ isMobile = false }: { isMobile?: boolean }) => {
+  const pathname = usePathname();
+  const { user } = useAuth();
+  
+  return (
+    <>
+      {navLinks
+        .filter(link => !link.premium || (link.premium && user?.isPremium))
+        .map(link => (
+        <Link
+          key={link.href}
+          href={link.href}
+          className={cn(
+            'transition-colors hover:text-primary',
+            pathname === link.href ? 'text-primary font-semibold' : 'text-muted-foreground',
+            isMobile && 'text-lg w-full text-left p-2'
+          )}
+        >
+          <div className="flex items-center gap-2">
+              {link.label}
+              {link.premium && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
+          </div>
+        </Link>
+      ))}
+    </>
+  );
+}
+
+
 export default function Header() {
   const { isAuthenticated, user, logout } = useAuth();
-  const pathname = usePathname();
+  const [isClient, setIsClient] = useState(false);
 
-  const renderNavLinks = (isMobile = false) =>
-    navLinks
-      .filter(link => !link.premium || (link.premium && user?.isPremium))
-      .map(link => (
-      <Link
-        key={link.href}
-        href={link.href}
-        className={cn(
-          'transition-colors hover:text-primary',
-          pathname === link.href ? 'text-primary font-semibold' : 'text-muted-foreground',
-          isMobile && 'text-lg w-full text-left p-2'
-        )}
-      >
-        <div className="flex items-center gap-2">
-            {link.label}
-            {link.premium && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
-        </div>
-      </Link>
-    ));
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
         <Logo />
         <nav className="hidden md:flex items-center space-x-6 text-sm font-medium ml-10">
-          {renderNavLinks()}
+          {isClient && <NavLinks />}
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-4">
           {isAuthenticated && user ? (
@@ -111,7 +126,7 @@ export default function Header() {
               </SheetTrigger>
               <SheetContent side="right">
                 <nav className="flex flex-col gap-4 mt-8">
-                  {renderNavLinks(true)}
+                  {isClient && <NavLinks isMobile={true} />}
                 </nav>
               </SheetContent>
             </Sheet>
