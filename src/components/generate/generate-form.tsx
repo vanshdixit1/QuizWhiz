@@ -17,6 +17,7 @@ import type { Quiz } from '@/lib/data';
 import QuizPlayer from '../quiz/quiz-player';
 import { Switch } from '../ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Label } from '@/components/ui/label';
 
 const topicSchema = z.object({
   topic: z.string().min(3, { message: 'Topic must be at least 3 characters.' }),
@@ -89,9 +90,6 @@ export default function GenerateForm() {
         setIsLoading(false);
     };
   };
-
-  const topicTimerEnabled = topicForm.watch('timerEnabled');
-  const pdfTimerEnabled = pdfForm.watch('timerEnabled');
 
   const renderTimerOptions = (form: any) => (
     <>
