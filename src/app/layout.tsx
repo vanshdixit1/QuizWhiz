@@ -7,6 +7,7 @@ import Header from '@/components/header';
 import { Toaster } from '@/components/ui/toaster';
 import Footer from '@/components/footer';
 import Chatbot from '@/components/chatbot';
+import { FirebaseClientProvider } from '@/firebase';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -28,15 +29,17 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className={cn('min-h-screen bg-background font-body antialiased', inter.variable)}>
-        <AuthProvider>
-          <div className="relative flex min-h-screen flex-col">
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
-          <Chatbot />
-          <Toaster />
-        </AuthProvider>
+        <FirebaseClientProvider>
+          <AuthProvider>
+            <div className="relative flex min-h-screen flex-col">
+              <Header />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </div>
+            <Chatbot />
+            <Toaster />
+          </AuthProvider>
+        </FirebaseClientProvider>
       </body>
     </html>
   );
