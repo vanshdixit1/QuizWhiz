@@ -15,7 +15,7 @@
     {
       "id": "general_knowledge",
       "description": "A glowing lightbulb against a dark background",
-      "imageUrl": "https://images.unsplash.com/photo-1567177662154-dfeb4c93b6ae?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxsaWdodCUyMGJ1bGJ8ZW58MHx8fHwxNzY2Nzc0Mzc5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1567177662154-dfeb4c93b6ae?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxsaWdodCUyMGJ1bGJ8ZW58MHx8fHwxNzY2Nzc0Mzc5fDA&ixlibrb-4.1.0&q=80&w=1080",
       "imageHint": "light bulb"
     },
     {
@@ -27,14 +27,20 @@
     {
       "id": "hero",
       "description": "A diverse group of people studying together",
-      "imageUrl": "https://images.unsplash.com/photo-1531545514256-b1400bc00f31?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxzdHVkZW50cyUyMGxlYXJuaW5nfGVufDB8fHx8MTc2NjY4NjgzOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1531545514256-b1400bc00f31?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxzdHVkZW50cyUyMGxlYXJuaW5nfGVufDB8fHx8MTc2NjY4NjgzOXww&ixlibrb-4.1.0&q=80&w=1080",
       "imageHint": "students learning"
     },
     {
       "id": "premium",
       "description": "A golden key on a dark background",
-      "imageUrl": "https://images.unsplash.com/photo-1648469556846-c3f5f31a5f7a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxnb2xkZW4lMjBrZXl8ZW58MHx8fHwxNzY2NzgzNDg1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1648469556846-c3f5f31a5f7a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxnb2xkZW4lMjBrZXl8ZW58MHx8fHwxNzY2NzgzNDg1fDA&ixlibrb-4.1.0&q=80&w=1080",
       "imageHint": "golden key"
+    },
+    {
+      "id": "about",
+      "description": "A person working on a laptop in a modern office space",
+      "imageUrl": "https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx3b3JraW5nJTIwb24lMjBsYXB0b3B8ZW58MHx8fHwxNzY2NzgzNDg1fDA&ixlib-rb-4.1.0&q=80&w=1080",
+      "imageHint": "person working"
     }
   ]
 }
