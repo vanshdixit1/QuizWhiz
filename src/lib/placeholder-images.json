@@ -1,3 +1,40 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "geography",
+      "description": "A stylised globe on a stand",
+      "imageUrl": "https://images.unsplash.com/photo-1706823871410-ed8b01faef7e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx3b3JsZCUyMG1hcHxlbnwwfHx8fDE3NjY3ODI2Njl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "world map"
+    },
+    {
+      "id": "history",
+      "description": "Ancient stone columns of a ruin",
+      "imageUrl": "https://images.unsplash.com/photo-1603566541830-972ff1b4b2cd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxhbmNpZW50JTIwcnVpbnN8ZW58MHx8fHwxNzY2Njg4NTA3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "ancient ruins"
+    },
+    {
+      "id": "general_knowledge",
+      "description": "A glowing lightbulb against a dark background",
+      "imageUrl": "https://images.unsplash.com/photo-1567177662154-dfeb4c93b6ae?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxsaWdodCUyMGJ1bGJ8ZW58MHx8fHwxNzY2Nzc0Mzc5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "light bulb"
+    },
+    {
+      "id": "english",
+      "description": "A stack of old, leather-bound books",
+      "imageUrl": "https://images.unsplash.com/photo-1604866830893-c13cafa515d5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxib29rcyUyMGxpYnJhcnl8ZW58MHx8fHwxNzY2NzE3MTk3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "books library"
+    },
+    {
+      "id": "hero",
+      "description": "A diverse group of people studying together",
+      "imageUrl": "https://images.unsplash.com/photo-1531545514256-b1400bc00f31?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxzdHVkZW50cyUyMGxlYXJuaW5nfGVufDB8fHx8MTc2NjY4NjgzOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "students learning"
+    },
+    {
+      "id": "premium",
+      "description": "A golden key on a dark background",
+      "imageUrl": "https://images.unsplash.com/photo-1648469556846-c3f5f31a5f7a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxnb2xkZW4lMjBrZXl8ZW58MHx8fHwxNzY2NzgzNDg1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "golden key"
+    }
+  ]
 }
