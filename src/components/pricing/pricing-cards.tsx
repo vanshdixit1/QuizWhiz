@@ -41,6 +41,9 @@ export default function PricingCards() {
     const router = useRouter();
     const { toast } = useToast();
 
+    // Note: This is a mock payment flow.
+    // In a real application, this would redirect to a payment provider
+    // like Stripe or Razorpay and handle the subscription via webhooks.
     const handleSubscribe = () => {
         if (!user) {
             router.push('/login');
@@ -48,8 +51,8 @@ export default function PricingCards() {
         }
         goPremium();
         toast({
-            title: "Congratulations!",
-            description: "You are now a Premium Member.",
+            title: "Subscription Activated!",
+            description: "Welcome to Premium! You now have access to all features.",
         });
         router.push('/generate');
     }
