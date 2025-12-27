@@ -1,34 +1,38 @@
-
 "use client";
 
 import * as THREE from 'three';
 import { useRef, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Points, PointMaterial } from '@react-three/drei';
 // @ts-ignore
 import * as random from 'maath/random/dist/maath-random.esm';
 
 function Particles() {
   const ref = useRef<THREE.Points>(null!);
-  const { positions, colors } = useMemo(() => {
+  const { viewport } = useThree();
+  const [positions, colors] = useMemo(() => {
     const count = 5000;
-    const positions = random.inSphere(new Float32Array(count * 3), { radius: 1.5 });
+    const positions = random.inSphere(new Float32Array(count * 3), { radius: 3 });
     const colors = new Float32Array(count * 3);
     const color = new THREE.Color();
+    const purple = new THREE.Color('#8a2be2');
+    const blue = new THREE.Color('#0000ff');
 
     for (let i = 0; i < count; i++) {
-        color.setHSL(Math.random(), 0.7, 0.7);
+        color.copy(Math.random() > 0.5 ? purple : blue).lerp(new THREE.Color('white'), Math.random() * 0.5);
         color.toArray(colors, i * 3);
     }
     
-    return { positions, colors };
+    return [positions, colors];
   }, []);
 
   useFrame((state, delta) => {
-    ref.current.rotation.x -= delta / 15;
-    ref.current.rotation.y -= delta / 20;
-    ref.current.position.x = THREE.MathUtils.lerp(ref.current.position.x, state.pointer.x * 0.5, 0.03);
-    ref.current.position.y = THREE.MathUtils.lerp(ref.current.position.y, state.pointer.y * 0.5, 0.03);
+    if (ref.current) {
+        ref.current.rotation.x -= delta / 25;
+        ref.current.rotation.y -= delta / 30;
+        ref.current.position.x = THREE.MathUtils.lerp(ref.current.position.x, state.pointer.x * (viewport.width / 4), 0.03);
+        ref.current.position.y = THREE.MathUtils.lerp(ref.current.position.y, state.pointer.y * (viewport.height / 4), 0.03);
+    }
   });
 
   return (
@@ -36,7 +40,7 @@ function Particles() {
         <PointMaterial
             transparent
             vertexColors
-            size={0.005}
+            size={0.008}
             sizeAttenuation={true}
             depthWrite={false}
         />
@@ -44,9 +48,9 @@ function Particles() {
   );
 }
 
-export const WebGLAnimation = () => {
+export function WebGLAnimation() {
     return (
-        <Canvas camera={{ position: [0, 0, 2.5] }}>
+        <Canvas camera={{ position: [0, 0, 5] }}>
             <Particles />
         </Canvas>
     )

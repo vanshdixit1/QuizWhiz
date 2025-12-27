@@ -42,7 +42,7 @@ const NavLinks = ({ isMobile = false }: { isMobile?: boolean }) => {
           href={link.href}
           className={cn(
             'transition-colors hover:text-primary',
-            pathname === link.href ? 'text-primary font-semibold' : 'text-muted-foreground',
+            pathname === link.href ? 'text-primary font-semibold' : 'text-foreground/60',
             isMobile && 'text-lg w-full text-left p-2'
           )}
         >
@@ -60,25 +60,34 @@ const NavLinks = ({ isMobile = false }: { isMobile?: boolean }) => {
 export default function Header() {
   const { isAuthenticated, user, logout } = useAuth();
   const [isClient, setIsClient] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center">
+    <header className={cn(
+        "sticky top-0 z-50 w-full transition-all duration-300",
+        isScrolled ? "border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60" : "bg-transparent"
+    )}>
+      <div className="container flex h-20 items-center">
         <Logo />
-        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium ml-10">
+        <nav className="hidden md:flex items-center space-x-8 text-sm font-medium ml-12">
           {isClient && <NavLinks />}
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-4">
-          {isAuthenticated && user ? (
+          {isClient && (isAuthenticated && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-9 w-9">
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar className="h-10 w-10">
                     <AvatarImage src={`https://api.dicebear.com/8.x/initials/svg?seed=${user.name}`} alt={user.name} />
                     <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
@@ -116,7 +125,7 @@ export default function Header() {
                 <UserCircle className="mr-2 h-4 w-4" /> Login
               </Link>
             </Button>
-          )}
+          ))}
           <div className="md:hidden">
             <Sheet>
               <SheetTrigger asChild>
