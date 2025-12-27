@@ -1,12 +1,18 @@
+
+"use client";
+
 import Link from 'next/link';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ArrowRight } from 'lucide-react';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
+
+const WebGLAnimation = dynamic(() => import('@/components/home/webgl-animation').then(mod => mod.WebGLAnimation), {
+  ssr: false,
+  loading: () => <div className="absolute inset-0 bg-card" />,
+});
 
 const Hero = () => {
-  const heroImage = PlaceHolderImages.find(img => img.id === 'hero');
-
   return (
     <section className="relative bg-card overflow-hidden">
       <div className="container grid lg:grid-cols-2 gap-12 items-center min-h-[calc(100vh-4rem)] py-20">
@@ -30,17 +36,11 @@ const Hero = () => {
             </Button>
           </div>
         </div>
-        <div className="relative h-64 lg:h-auto lg:self-stretch">
-          {heroImage && (
-             <Image
-                src={heroImage.imageUrl}
-                alt={heroImage.description}
-                fill
-                className="object-cover rounded-2xl shadow-xl"
-                data-ai-hint={heroImage.imageHint}
-              />
-          )}
-           <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent lg:bg-gradient-to-r"></div>
+        
+        <div className="absolute inset-0 z-0 h-full w-full">
+          <Suspense fallback={null}>
+            <WebGLAnimation />
+          </Suspense>
         </div>
       </div>
     </section>
