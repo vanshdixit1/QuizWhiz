@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, UserCircle, LogOut, LayoutDashboard, Crown, Star } from 'lucide-react';
+import { Menu, UserCircle, LogOut, LayoutDashboard, Crown, Star, Sun, Moon } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useTheme } from 'next-themes';
 
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
@@ -56,6 +57,22 @@ const NavLinks = ({ isMobile = false }: { isMobile?: boolean }) => {
   );
 }
 
+const ThemeToggle = () => {
+    const { theme, setTheme } = useTheme();
+  
+    return (
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+      >
+        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+        <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+        <span className="sr-only">Toggle theme</span>
+      </Button>
+    );
+  };
+
 
 export default function Header() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -82,7 +99,8 @@ export default function Header() {
         <nav className="hidden md:flex items-center space-x-8 text-sm font-medium ml-12">
           {isClient && <NavLinks />}
         </nav>
-        <div className="flex flex-1 items-center justify-end space-x-4">
+        <div className="flex flex-1 items-center justify-end space-x-2">
+            <ThemeToggle />
           {isClient && (isAuthenticated && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
