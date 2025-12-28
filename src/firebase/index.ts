@@ -1,6 +1,6 @@
 'use client';
 
-import { firebaseConfig as clientFirebaseConfig } from '@/firebase/config';
+import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp, FirebaseOptions } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore'
@@ -10,28 +10,10 @@ export function initializeFirebase() {
     return getSdks(getApp());
   }
 
-  const isServer = typeof window === 'undefined';
-  
-  let firebaseConfig: FirebaseOptions;
-
-  if (isServer) {
-    // Server-side: Use environment variables prefixed with NEXT_PUBLIC_
-    firebaseConfig = {
-      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-      authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-      appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-    };
-  } else {
-    // Client-side: Use the imported config object, which Next.js populates
-    // from .env.local or environment variables at build time.
-    firebaseConfig = clientFirebaseConfig;
-  }
-
-  // Final check to ensure configuration is not empty
+  // This will now correctly use the clientFirebaseConfig which is populated
+  // by Next.js with the NEXT_PUBLIC_ environment variables.
   if (!firebaseConfig.projectId) {
-     throw new Error('Firebase configuration is missing. Ensure environment variables are set for server-side rendering or the firebase/config.ts is correct for client-side.');
+     throw new Error('Firebase configuration is missing. Ensure environment variables with NEXT_PUBLIC_ prefix are set and the firebase/config.ts file is correct.');
   }
 
   const firebaseApp = initializeApp(firebaseConfig);
