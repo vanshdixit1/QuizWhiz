@@ -47,8 +47,8 @@ export default function AttemptedQuizzes() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {quizHistory.map((item) => (
-            <TableRow key={`${item.quizId}-${item.date}`}>
+          {quizHistory.map((item, index) => (
+            <TableRow key={`${item.quizId}-${index}`}>
               <TableCell className="font-medium">{item.quizTitle}</TableCell>
               <TableCell>
                 <Badge variant="secondary">{item.category}</Badge>

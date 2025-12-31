@@ -1,9 +1,10 @@
+
 "use client";
 
 import { useAuth } from '@/contexts/auth-context';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '../ui/button';
-import { Check } from 'lucide-react';
+import { Check, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -37,24 +38,16 @@ const plans = [
 ]
 
 export default function PricingCards() {
-    const { user, goPremium } = useAuth();
+    const { user, isAuthenticated } = useAuth();
     const router = useRouter();
-    const { toast } = useToast();
 
-    // Note: This is a mock payment flow.
-    // In a real application, this would redirect to a payment provider
-    // like Stripe or Razorpay and handle the subscription via webhooks.
-    const handleSubscribe = () => {
-        if (!user) {
+    const handleSubscribeClick = () => {
+        if (!isAuthenticated) {
             router.push('/login');
             return;
         }
-        goPremium();
-        toast({
-            title: "Subscription Activated!",
-            description: "Welcome to Premium! You now have access to all features.",
-        });
-        router.push('/generate');
+        // Redirect to email client to contact for payment
+        window.location.href = "mailto:dixitvansh140@gmail.com?subject=Inquiry%20about%20QuizWhiz%20Premium";
     }
 
     return (
@@ -82,13 +75,13 @@ export default function PricingCards() {
                     </CardContent>
                     <CardFooter>
                         <Button 
-                            onClick={handleSubscribe} 
+                            onClick={handleSubscribeClick}
                             className="w-full" 
                             size="lg"
                             variant={plan.popular ? "default" : "outline"}
                             disabled={user?.isPremium}
                         >
-                            {user?.isPremium ? 'You are Premium' : `Choose ${plan.name}`}
+                            {user?.isPremium ? 'You are a Premium Member' : `Choose ${plan.name}`}
                         </Button>
                     </CardFooter>
                 </Card>

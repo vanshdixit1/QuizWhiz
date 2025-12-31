@@ -23,26 +23,26 @@ type User = {
 type AuthContextType = {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string) => void;
+  isLoading: boolean;
+  login: (name: string, email: string) => void;
   signup: (name: string, email: string) => void;
   logout: () => void;
   goPremium: () => void;
   useFreeGeneration: () => void;
   addQuizAttempt: (attempt: Omit<UserQuizHistory, 'date'>) => void;
-  allowFreeGeneration: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem('quizwhiz_user');
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
-        // Ensure necessary properties exist
         if (typeof parsedUser.hasUsedFreeGeneration === 'undefined') {
           parsedUser.hasUsedFreeGeneration = false;
         }
@@ -54,32 +54,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Failed to parse user from localStorage", error);
       localStorage.removeItem('quizwhiz_user');
+    } finally {
+        setIsLoading(false);
     }
   }, []);
 
-  const updateUserInStateAndStorage = (updatedUser: User) => {
-    localStorage.setItem('quizwhiz_user', JSON.stringify(updatedUser));
+  const updateUserInStateAndStorage = (updatedUser: User | null) => {
+    if (updatedUser) {
+        localStorage.setItem('quizwhiz_user', JSON.stringify(updatedUser));
+    } else {
+        localStorage.removeItem('quizwhiz_user');
+    }
     setUser(updatedUser);
   };
 
-  const login = (email: string) => {
-    const storedUser = localStorage.getItem('quizwhiz_user');
-    let existingUser: Partial<User> = {};
-    if (storedUser) {
-        try {
-            const parsed = JSON.parse(storedUser);
-            if (parsed.email === email) {
-                existingUser = parsed;
-            }
-        } catch (e) { console.error(e) }
-    }
-    
-    const newUser: User = { 
-      name: email.split('@')[0], 
-      email, 
-      isPremium: existingUser.isPremium ?? false,
-      hasUsedFreeGeneration: existingUser.hasUsedFreeGeneration ?? false,
-      quizHistory: existingUser.quizHistory ?? [],
+  const login = (name: string, email: string) => {
+    const newUser: User = {
+      name,
+      email,
+      isPremium: false,
+      hasUsedFreeGeneration: false,
+      quizHistory: [],
     };
     updateUserInStateAndStorage(newUser);
   };
@@ -90,8 +85,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('quizwhiz_user');
-    setUser(null);
+    updateUserInStateAndStorage(null);
   };
   
   const goPremium = () => {
@@ -101,14 +95,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const useFreeGeneration = () => {
-    if (user) {
+    if (user && !user.isPremium) {
       updateUserInStateAndStorage({ ...user, hasUsedFreeGeneration: true });
-    }
-  };
-
-  const allowFreeGeneration = () => {
-    if (user) {
-      updateUserInStateAndStorage({ ...user, hasUsedFreeGeneration: false });
     }
   };
 
@@ -121,13 +109,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, logout, goPremium, useFreeGeneration, addQuizAttempt, allowFreeGeneration }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, signup, logout, goPremium, useFreeGeneration, addQuizAttempt }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');

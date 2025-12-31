@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -26,6 +27,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -43,6 +45,7 @@ export default function AuthForm() {
   const { login, signup } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('login');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -55,15 +58,19 @@ export default function AuthForm() {
   });
 
   const onLoginSubmit = (values: z.infer<typeof loginSchema>) => {
-    login(values.email);
+    setIsSubmitting(true);
+    login(values.email.split('@')[0], values.email);
     toast({ title: "Login Successful", description: "Welcome back!" });
     router.push('/dashboard');
+    setIsSubmitting(false);
   };
 
   const onSignupSubmit = (values: z.infer<typeof signupSchema>) => {
+    setIsSubmitting(true);
     signup(values.name, values.email);
     toast({ title: "Account Created", description: "Welcome to QuizWhiz!" });
     router.push('/dashboard');
+    setIsSubmitting(false);
   };
 
   return (
@@ -103,7 +110,10 @@ export default function AuthForm() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full">Login</Button>
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Login
+                </Button>
               </form>
             </Form>
           </CardContent>
@@ -151,7 +161,10 @@ export default function AuthForm() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full">Create Account</Button>
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Create Account
+                </Button>
               </form>
             </Form>
           </CardContent>

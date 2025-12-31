@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -24,32 +25,31 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/quiz', label: 'Quizzes' },
-  { href: '/generate', label: 'Generate', premium: true },
+  { href: '/generate', label: 'Generate' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/about', label: 'About' },
 ];
 
-const NavLinks = ({ isMobile = false }: { isMobile?: boolean }) => {
+const NavLinks = ({ isMobile = false, onLinkClick }: { isMobile?: boolean, onLinkClick?: () => void }) => {
   const pathname = usePathname();
   const { user } = useAuth();
   
   return (
     <>
-      {navLinks
-        .filter(link => !link.premium || (link.premium && user?.isPremium))
-        .map(link => (
+      {navLinks.map(link => (
         <Link
           key={link.href}
           href={link.href}
+          onClick={onLinkClick}
           className={cn(
             'transition-colors hover:text-primary',
             pathname === link.href ? 'text-primary font-semibold' : 'text-foreground/60',
-            isMobile && 'text-lg w-full text-left p-2'
+            isMobile ? 'text-lg w-full text-left p-2 rounded-md hover:bg-muted' : 'text-sm font-medium'
           )}
         >
           <div className="flex items-center gap-2">
               {link.label}
-              {link.premium && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
+              {link.href === '/generate' && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
           </div>
         </Link>
       ))}
@@ -65,10 +65,10 @@ const ThemeToggle = () => {
         variant="ghost"
         size="icon"
         onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+        aria-label="Toggle theme"
       >
         <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
         <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-        <span className="sr-only">Toggle theme</span>
       </Button>
     );
   };
@@ -78,6 +78,7 @@ export default function Header() {
   const { isAuthenticated, user, logout } = useAuth();
   const [isClient, setIsClient] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -88,6 +89,7 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleMobileLinkClick = () => setIsMobileMenuOpen(false);
 
   return (
     <header className={cn(
@@ -96,7 +98,7 @@ export default function Header() {
     )}>
       <div className="container flex h-20 items-center">
         <Logo />
-        <nav className="hidden md:flex items-center space-x-8 text-sm font-medium ml-12">
+        <nav className="hidden md:flex items-center space-x-8 ml-12">
           {isClient && <NavLinks />}
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-2">
@@ -145,15 +147,16 @@ export default function Header() {
             </Button>
           ))}
           <div className="md:hidden">
-            <Sheet>
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
                   <Menu />
+                  <span className="sr-only">Open menu</span>
                 </Button>
               </SheetTrigger>
               <SheetContent side="right">
                 <nav className="flex flex-col gap-4 mt-8">
-                  {isClient && <NavLinks isMobile={true} />}
+                  {isClient && <NavLinks isMobile={true} onLinkClick={handleMobileLinkClick} />}
                 </nav>
               </SheetContent>
             </Sheet>
