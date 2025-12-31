@@ -37,8 +37,9 @@ export default function GenerateForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [generatedQuiz, setGeneratedQuiz] = useState<Quiz | null>(null);
   const [quizSettings, setQuizSettings] = useState<{timerEnabled: boolean, timerDuration: number} | null>(null);
+  const [isFreeTrialQuiz, setIsFreeTrialQuiz] = useState(false);
   const { toast } = useToast();
-  const { user, useFreeGeneration } = useAuth();
+  const { user } = useAuth();
 
   const topicForm = useForm<z.infer<typeof topicSchema>>({
     resolver: zodResolver(topicSchema),
@@ -50,22 +51,25 @@ export default function GenerateForm() {
     defaultValues: { timerEnabled: true, timerDuration: 15 },
   });
 
-  const handleSuccessfulGeneration = () => {
-    if (user && !user.isPremium) {
-        useFreeGeneration();
+  const handleGenerationStart = () => {
+    // Check if this generation is part of a free trial
+    if (user && !user.isPremium && !user.hasUsedFreeGeneration) {
+      setIsFreeTrialQuiz(true);
+    } else {
+      setIsFreeTrialQuiz(false);
     }
   }
 
   const onTopicSubmit = async (values: z.infer<typeof topicSchema>) => {
     setIsLoading(true);
     setGeneratedQuiz(null);
+    handleGenerationStart();
     try {
       const input: GenerateQuizFromTopicInput = { topic: values.topic };
       const result = await generateQuizFromTopic(input);
       setGeneratedQuiz(result);
       setQuizSettings({ timerEnabled: values.timerEnabled, timerDuration: values.timerDuration });
       toast({ title: 'Quiz Generated!', description: 'Your quiz from the topic is ready.' });
-      handleSuccessfulGeneration();
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate quiz from topic.' });
@@ -77,6 +81,7 @@ export default function GenerateForm() {
   const onPdfSubmit = async (values: z.infer<typeof pdfSchema>) => {
     setIsLoading(true);
     setGeneratedQuiz(null);
+    handleGenerationStart();
 
     const reader = new FileReader();
     reader.readAsDataURL(values.pdf);
@@ -88,7 +93,6 @@ export default function GenerateForm() {
         setGeneratedQuiz(result);
         setQuizSettings({ timerEnabled: values.timerEnabled, timerDuration: values.timerDuration });
         toast({ title: 'Quiz Generated!', description: 'Your quiz from the PDF is ready.' });
-        handleSuccessfulGeneration();
       } catch (error) {
         console.error(error);
         toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate quiz from PDF.' });
@@ -162,7 +166,7 @@ export default function GenerateForm() {
   }
 
   if (generatedQuiz) {
-      return <QuizPlayer quiz={generatedQuiz} isGenerated={true} timerSettings={quizSettings!} />;
+      return <QuizPlayer quiz={generatedQuiz} isGenerated={true} timerSettings={quizSettings!} isFreeTrialQuiz={isFreeTrialQuiz} />;
   }
 
   return (

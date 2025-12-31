@@ -19,12 +19,13 @@ type QuizPlayerProps = {
   quiz: Quiz;
   isGenerated?: boolean;
   timerSettings?: { timerEnabled: boolean, timerDuration: number };
+  isFreeTrialQuiz?: boolean;
 };
 
 type GameState = 'settings' | 'playing' | 'finished';
 
-export default function QuizPlayer({ quiz, isGenerated = false, timerSettings }: QuizPlayerProps) {
-  const { addQuizAttempt } = useAuth();
+export default function QuizPlayer({ quiz, isGenerated = false, timerSettings, isFreeTrialQuiz = false }: QuizPlayerProps) {
+  const { addQuizAttempt, useFreeGeneration } = useAuth();
   const [gameState, setGameState] = useState<GameState>(isGenerated ? 'playing' : 'settings');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
@@ -80,6 +81,10 @@ export default function QuizPlayer({ quiz, isGenerated = false, timerSettings }:
         totalQuestions: quiz.questions.length,
         category: quiz.category,
     });
+    // If this was a free trial quiz, mark it as used now.
+    if (isFreeTrialQuiz) {
+        useFreeGeneration();
+    }
     setGameState('finished');
   }
 
