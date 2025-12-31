@@ -6,7 +6,7 @@ const Footer = () => {
       <div className="container flex items-center justify-between py-6">
         <Logo className="text-base" />
         <p className="text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} QuizWhiz. All rights reserved.
+          © {new Date().getFullYear()} QuizWhiz. All rights reserved.
         </p>
       </div>
     </footer>
