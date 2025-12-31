@@ -29,6 +29,7 @@ type AuthContextType = {
   goPremium: () => void;
   useFreeGeneration: () => void;
   addQuizAttempt: (attempt: Omit<UserQuizHistory, 'date'>) => void;
+  allowFreeGeneration: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -105,6 +106,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const allowFreeGeneration = () => {
+    if (user) {
+      updateUserInStateAndStorage({ ...user, hasUsedFreeGeneration: false });
+    }
+  };
+
   const addQuizAttempt = (attempt: Omit<UserQuizHistory, 'date'>) => {
     if (user) {
         const newAttempt = { ...attempt, date: new Date().toISOString() };
@@ -114,7 +121,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, logout, goPremium, useFreeGeneration, addQuizAttempt }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, logout, goPremium, useFreeGeneration, addQuizAttempt, allowFreeGeneration }}>
       {children}
     </AuthContext.Provider>
   );
