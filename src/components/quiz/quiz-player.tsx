@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -12,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import QuizResults from './quiz-results';
 import { cn } from '@/lib/utils';
 import { Timer, Clock } from 'lucide-react';
+import { useAuth } from '@/contexts/auth-context';
 
 type QuizPlayerProps = {
   quiz: Quiz;
@@ -22,6 +24,7 @@ type QuizPlayerProps = {
 type GameState = 'settings' | 'playing' | 'finished';
 
 export default function QuizPlayer({ quiz, isGenerated = false, timerSettings }: QuizPlayerProps) {
+  const { addQuizAttempt } = useAuth();
   const [gameState, setGameState] = useState<GameState>(isGenerated ? 'playing' : 'settings');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
@@ -69,17 +72,30 @@ export default function QuizPlayer({ quiz, isGenerated = false, timerSettings }:
     setSelectedAnswers(prev => ({ ...prev, [currentQuestionIndex]: answer }));
   };
 
+  const finishQuiz = (finalScore: number) => {
+    addQuizAttempt({
+        quizId: quiz.id,
+        quizTitle: quiz.title,
+        score: Math.round((finalScore / quiz.questions.length) * 100),
+        totalQuestions: quiz.questions.length,
+        category: quiz.category,
+    });
+    setGameState('finished');
+  }
+
   const handleNextQuestion = () => {
+    let currentScore = score;
     const isCorrect = selectedAnswers[currentQuestionIndex] === currentQuestion.correctAnswer;
     if (isCorrect) {
-      setScore(prev => prev + 1);
+      currentScore = score + 1;
+      setScore(currentScore);
     }
 
     if (currentQuestionIndex < quiz.questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
       setTimeLeft(timerDuration);
     } else {
-      setGameState('finished');
+      finishQuiz(currentScore);
     }
   };
   
