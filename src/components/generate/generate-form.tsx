@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -18,6 +19,7 @@ import QuizPlayer from '../quiz/quiz-player';
 import { Switch } from '../ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Label } from '@/components/ui/label';
+import { useAuth } from '@/contexts/auth-context';
 
 const topicSchema = z.object({
   topic: z.string().min(3, { message: 'Topic must be at least 3 characters.' }),
@@ -36,6 +38,7 @@ export default function GenerateForm() {
   const [generatedQuiz, setGeneratedQuiz] = useState<Quiz | null>(null);
   const [quizSettings, setQuizSettings] = useState<{timerEnabled: boolean, timerDuration: number} | null>(null);
   const { toast } = useToast();
+  const { user, useFreeGeneration } = useAuth();
 
   const topicForm = useForm<z.infer<typeof topicSchema>>({
     resolver: zodResolver(topicSchema),
@@ -47,6 +50,12 @@ export default function GenerateForm() {
     defaultValues: { timerEnabled: true, timerDuration: 15 },
   });
 
+  const handleSuccessfulGeneration = () => {
+    if (user && !user.isPremium && !user.hasUsedFreeGeneration) {
+        useFreeGeneration();
+    }
+  }
+
   const onTopicSubmit = async (values: z.infer<typeof topicSchema>) => {
     setIsLoading(true);
     setGeneratedQuiz(null);
@@ -56,6 +65,7 @@ export default function GenerateForm() {
       setGeneratedQuiz(result);
       setQuizSettings({ timerEnabled: values.timerEnabled, timerDuration: values.timerDuration });
       toast({ title: 'Quiz Generated!', description: 'Your quiz from the topic is ready.' });
+      handleSuccessfulGeneration();
     } catch (error) {
       console.error(error);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate quiz from topic.' });
@@ -78,6 +88,7 @@ export default function GenerateForm() {
         setGeneratedQuiz(result);
         setQuizSettings({ timerEnabled: values.timerEnabled, timerDuration: values.timerDuration });
         toast({ title: 'Quiz Generated!', description: 'Your quiz from the PDF is ready.' });
+        handleSuccessfulGeneration();
       } catch (error) {
         console.error(error);
         toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate quiz from PDF.' });

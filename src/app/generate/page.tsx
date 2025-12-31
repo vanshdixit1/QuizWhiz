@@ -1,10 +1,12 @@
+
 "use client";
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
-import { Loader2, Lock } from 'lucide-react';
+import { Loader2, Lock, Sparkles } from 'lucide-react';
 import GenerateForm from '@/components/generate/generate-form';
+import { Button } from '@/components/ui/button';
 
 export default function GeneratePage() {
     const { user, isAuthenticated, isLoading } = useAuth() as any;
@@ -24,18 +26,19 @@ export default function GeneratePage() {
         );
     }
     
-    if (user && !user.isPremium) {
+    // Allow access if user is premium OR if they haven't used their free generation yet
+    if (user && !user.isPremium && user.hasUsedFreeGeneration) {
         return (
             <div className="container text-center py-20">
                 <Lock className="h-20 w-20 mx-auto text-muted-foreground mb-4" />
-                <h1 className="text-3xl font-bold">Premium Feature</h1>
-                <p className="text-muted-foreground text-lg mt-2">
-                    Quiz generation is a premium feature. Please upgrade your plan to get access.
+                <h1 className="text-3xl font-bold">Free Trial Used</h1>
+                <p className="text-muted-foreground text-lg mt-2 max-w-md mx-auto">
+                    You've used your one-time free quiz generation. Please upgrade to continue creating AI-powered quizzes.
                 </p>
                 <div className="mt-8">
-                    <button onClick={() => router.push('/pricing')} className="bg-primary text-primary-foreground px-6 py-2 rounded-md">
-                        View Pricing
-                    </button>
+                    <Button onClick={() => router.push('/pricing')} className="bg-primary text-primary-foreground px-6 py-2 rounded-md">
+                        Upgrade to Premium
+                    </Button>
                 </div>
             </div>
         )
@@ -50,6 +53,12 @@ export default function GeneratePage() {
                 <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl mt-4">
                     Create custom quizzes in seconds. Choose your method and let our AI do the work.
                 </p>
+                {user && !user.isPremium && !user.hasUsedFreeGeneration && (
+                    <div className="mt-4 inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 rounded-full px-4 py-2 font-semibold">
+                        <Sparkles className="h-5 w-5" />
+                        You have 1 free quiz generation available!
+                    </div>
+                )}
             </div>
             <GenerateForm />
         </div>

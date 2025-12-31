@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -6,6 +7,7 @@ type User = {
   name: string;
   email: string;
   isPremium: boolean;
+  hasUsedFreeGeneration: boolean;
 };
 
 type AuthContextType = {
@@ -15,6 +17,7 @@ type AuthContextType = {
   signup: (name: string, email: string) => void;
   logout: () => void;
   goPremium: () => void;
+  useFreeGeneration: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,7 +29,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const storedUser = localStorage.getItem('quizwhiz_user');
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        // Ensure hasUsedFreeGeneration property exists
+        if (typeof parsedUser.hasUsedFreeGeneration === 'undefined') {
+          parsedUser.hasUsedFreeGeneration = false;
+        }
+        setUser(parsedUser);
       }
     } catch (error) {
       console.error("Failed to parse user from localStorage", error);
@@ -35,13 +43,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = (email: string) => {
-    const newUser: User = { name: email.split('@')[0], email, isPremium: user?.isPremium || false };
+    // For existing users, we check if they already have used the feature.
+    // A simple approach is to check if the flag is already set in their localStorage data.
+    // If not, we can assume they haven't. This logic would be more robust with a backend.
+    const storedUser = localStorage.getItem('quizwhiz_user');
+    const existingUser = storedUser ? JSON.parse(storedUser) : {};
+    
+    const newUser: User = { 
+      name: email.split('@')[0], 
+      email, 
+      isPremium: existingUser.email === email ? existingUser.isPremium : false,
+      hasUsedFreeGeneration: existingUser.email === email ? existingUser.hasUsedFreeGeneration : false,
+    };
     localStorage.setItem('quizwhiz_user', JSON.stringify(newUser));
     setUser(newUser);
   };
   
   const signup = (name: string, email: string) => {
-    const newUser: User = { name, email, isPremium: false };
+    const newUser: User = { name, email, isPremium: false, hasUsedFreeGeneration: false };
     localStorage.setItem('quizwhiz_user', JSON.stringify(newUser));
     setUser(newUser);
   };
@@ -59,8 +78,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const useFreeGeneration = () => {
+    if (user) {
+      const updatedUser = { ...user, hasUsedFreeGeneration: true };
+      localStorage.setItem('quizwhiz_user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, logout, goPremium }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, logout, goPremium, useFreeGeneration }}>
       {children}
     </AuthContext.Provider>
   );
