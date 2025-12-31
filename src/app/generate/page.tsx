@@ -9,7 +9,7 @@ import GenerateForm from '@/components/generate/generate-form';
 import { Button } from '@/components/ui/button';
 
 export default function GeneratePage() {
-    const { user, isAuthenticated, isLoading, useFreeGeneration } = useAuth();
+    const { user, isAuthenticated, isLoading } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
@@ -18,7 +18,7 @@ export default function GeneratePage() {
         }
     }, [isAuthenticated, isLoading, router]);
 
-    if (isLoading || !isAuthenticated) {
+    if (isLoading || !isAuthenticated || !user) {
         return (
             <div className="flex justify-center items-center min-h-[calc(100vh-8rem)]">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -27,7 +27,7 @@ export default function GeneratePage() {
     }
     
     // Lock access if the user is not premium AND has already used their free generation.
-    if (user && !user.isPremium && user.hasUsedFreeGeneration) {
+    if (!user.isPremium && user.hasUsedFreeGeneration) {
         return (
             <div className="container text-center py-20">
                 <Lock className="h-20 w-20 mx-auto text-muted-foreground mb-4" />
@@ -47,6 +47,8 @@ export default function GeneratePage() {
         )
     }
 
+    const isFreeTrial = !user.isPremium && !user.hasUsedFreeGeneration;
+
     return (
         <div className="container py-12">
             <div className="text-center mb-12">
@@ -56,14 +58,15 @@ export default function GeneratePage() {
                 <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl mt-4">
                     Create custom quizzes in seconds. Choose your method and let our AI do the work.
                 </p>
-                {user && !user.isPremium && !user.hasUsedFreeGeneration && (
+                {isFreeTrial && (
                     <div className="mt-4 inline-flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 rounded-full px-4 py-2 font-semibold">
                         <Sparkles className="h-5 w-5" />
                         You have 1 free AI quiz generation available!
                     </div>
                 )}
             </div>
-            <GenerateForm />
+            <GenerateForm isFreeTrial={isFreeTrial} />
         </div>
     );
 }
+

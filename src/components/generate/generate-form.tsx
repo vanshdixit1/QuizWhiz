@@ -19,7 +19,6 @@ import QuizPlayer from '../quiz/quiz-player';
 import { Switch } from '../ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/contexts/auth-context';
 
 const topicSchema = z.object({
   topic: z.string().min(3, { message: 'Topic must be at least 3 characters.' }),
@@ -33,13 +32,15 @@ const pdfSchema = z.object({
   timerDuration: z.number().default(15),
 });
 
-export default function GenerateForm() {
+type GenerateFormProps = {
+  isFreeTrial: boolean;
+};
+
+export default function GenerateForm({ isFreeTrial }: GenerateFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [generatedQuiz, setGeneratedQuiz] = useState<Quiz | null>(null);
   const [quizSettings, setQuizSettings] = useState<{timerEnabled: boolean, timerDuration: number} | null>(null);
-  const [isFreeTrialQuiz, setIsFreeTrialQuiz] = useState(false);
   const { toast } = useToast();
-  const { user } = useAuth();
 
   const topicForm = useForm<z.infer<typeof topicSchema>>({
     resolver: zodResolver(topicSchema),
@@ -51,19 +52,9 @@ export default function GenerateForm() {
     defaultValues: { timerEnabled: true, timerDuration: 15 },
   });
 
-  const handleGenerationStart = () => {
-    // Check if this generation is part of a free trial
-    if (user && !user.isPremium && !user.hasUsedFreeGeneration) {
-      setIsFreeTrialQuiz(true);
-    } else {
-      setIsFreeTrialQuiz(false);
-    }
-  }
-
   const onTopicSubmit = async (values: z.infer<typeof topicSchema>) => {
     setIsLoading(true);
     setGeneratedQuiz(null);
-    handleGenerationStart();
     try {
       const input: GenerateQuizFromTopicInput = { topic: values.topic };
       const result = await generateQuizFromTopic(input);
@@ -81,7 +72,6 @@ export default function GenerateForm() {
   const onPdfSubmit = async (values: z.infer<typeof pdfSchema>) => {
     setIsLoading(true);
     setGeneratedQuiz(null);
-    handleGenerationStart();
 
     const reader = new FileReader();
     reader.readAsDataURL(values.pdf);
@@ -166,7 +156,7 @@ export default function GenerateForm() {
   }
 
   if (generatedQuiz) {
-      return <QuizPlayer quiz={generatedQuiz} isGenerated={true} timerSettings={quizSettings!} isFreeTrialQuiz={isFreeTrialQuiz} />;
+      return <QuizPlayer quiz={generatedQuiz} isGenerated={true} timerSettings={quizSettings!} isFreeTrialQuiz={isFreeTrial} />;
   }
 
   return (
@@ -247,3 +237,4 @@ export default function GenerateForm() {
     </div>
   );
 }
+
