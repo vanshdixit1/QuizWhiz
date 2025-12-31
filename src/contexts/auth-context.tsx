@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, {
@@ -15,10 +14,11 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
-import { doc, setDoc, collection } from 'firebase/firestore';
+import { doc, setDoc, collection, DocumentReference } from 'firebase/firestore';
 import { useFirebase, useMemoFirebase } from '@/firebase/provider';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useCollection } from '@/firebase/firestore/use-collection';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 // Type for a single quiz attempt history item
 export type UserQuizHistory = {
@@ -55,8 +55,8 @@ type AuthContextType = {
   signup: (name: string, email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  addQuizAttempt: (attempt: Omit<UserQuizHistory, 'date'>) => Promise<void>;
-  useFreeGeneration: () => Promise<void>;
+  addQuizAttempt: (attempt: Omit<UserQuizHistory, 'date'>) => void;
+  useFreeGeneration: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -108,7 +108,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       premium: false,
       hasUsedFreeGeneration: false,
     };
-    await setDoc(doc(firestore, 'users', user.uid), newUserProfile);
+    // Use non-blocking write for better UX and error handling
+    setDocumentNonBlocking(doc(firestore, 'users', user.uid), newUserProfile, {});
   };
 
   const login = async (email: string, password: string) => {
@@ -121,19 +122,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await signOut(auth);
   };
 
-  const addQuizAttempt = async (attempt: Omit<UserQuizHistory, 'date'>) => {
+  const addQuizAttempt = (attempt: Omit<UserQuizHistory, 'date'>) => {
     if (!appUser || !firestore) return;
     const newAttempt = { ...attempt, date: new Date().toISOString() };
     const attemptRef = doc(collection(firestore, `users/${appUser.firebaseUser.uid}/quizAttempts`));
-    await setDoc(attemptRef, newAttempt);
+    // Use non-blocking write
+    setDocumentNonBlocking(attemptRef, newAttempt, {});
   };
 
-  const useFreeGeneration = async () => {
+  const useFreeGeneration = () => {
     if (!appUser || !appUser.profile || !firestore) return;
     if (appUser.profile.premium) return; // Premium users don't use up a free generation
 
     const userDocRef = doc(firestore, 'users', appUser.firebaseUser.uid);
-    await setDoc(userDocRef, { hasUsedFreeGeneration: true }, { merge: true });
+    // Use non-blocking write
+    setDocumentNonBlocking(userDocRef, { hasUsedFreeGeneration: true }, { merge: true });
   };
   
   const isLoading = isFirebaseUserLoading || isProfileLoading || isHistoryLoading;
