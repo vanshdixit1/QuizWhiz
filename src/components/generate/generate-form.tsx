@@ -4,15 +4,15 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { generateQuizFromTopic, GenerateQuizFromTopicInput, GenerateQuizFromTopicOutput } from '@/ai/flows/generate-quiz-from-topic';
-import { generateQuizFromPdf, GenerateQuizFromPdfInput, GenerateQuizFromPdfOutput } from '@/ai/flows/generate-quiz-from-pdf';
+import { generateQuizFromTopic, GenerateQuizFromTopicInput } from '@/ai/flows/generate-quiz-from-topic';
+import { generateQuizFromPdf, GenerateQuizFromPdfInput } from '@/ai/flows/generate-quiz-from-pdf';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, Wand2, Clock } from 'lucide-react';
+import { Loader2, Wand2, Clock, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Quiz } from '@/lib/data';
 import QuizPlayer from '../quiz/quiz-player';
@@ -38,7 +38,7 @@ export default function GenerateForm() {
   const [generatedQuiz, setGeneratedQuiz] = useState<Quiz | null>(null);
   const [quizSettings, setQuizSettings] = useState<{timerEnabled: boolean, timerDuration: number} | null>(null);
   const { toast } = useToast();
-  const { user, useFreeGeneration } = useAuth();
+  const { user, useFreeGeneration, allowFreeGeneration } = useAuth();
 
   const topicForm = useForm<z.infer<typeof topicSchema>>({
     resolver: zodResolver(topicSchema),
@@ -51,7 +51,7 @@ export default function GenerateForm() {
   });
 
   const handleSuccessfulGeneration = () => {
-    if (user && !user.isPremium && !user.hasUsedFreeGeneration) {
+    if (user && !user.isPremium) {
         useFreeGeneration();
     }
   }
@@ -61,7 +61,7 @@ export default function GenerateForm() {
     setGeneratedQuiz(null);
     try {
       const input: GenerateQuizFromTopicInput = { topic: values.topic };
-      const result: GenerateQuizFromTopicOutput = await generateQuizFromTopic(input);
+      const result = await generateQuizFromTopic(input);
       setGeneratedQuiz(result);
       setQuizSettings({ timerEnabled: values.timerEnabled, timerDuration: values.timerDuration });
       toast({ title: 'Quiz Generated!', description: 'Your quiz from the topic is ready.' });
@@ -84,7 +84,7 @@ export default function GenerateForm() {
       try {
         const pdfDataUri = reader.result as string;
         const input: GenerateQuizFromPdfInput = { pdfDataUri };
-        const result: GenerateQuizFromPdfOutput = await generateQuizFromPdf(input);
+        const result = await generateQuizFromPdf(input);
         setGeneratedQuiz(result);
         setQuizSettings({ timerEnabled: values.timerEnabled, timerDuration: values.timerDuration });
         toast({ title: 'Quiz Generated!', description: 'Your quiz from the PDF is ready.' });
@@ -154,7 +154,16 @@ export default function GenerateForm() {
 
   return (
     <div>
-        {!generatedQuiz ? (
+        {isLoading && (
+            <div className="mt-8 text-center">
+                <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
+                <p className="mt-4 text-muted-foreground">Generating your quiz... This might take a moment.</p>
+            </div>
+        )}
+
+        {!isLoading && generatedQuiz ? (
+            <QuizPlayer quiz={generatedQuiz} isGenerated={true} timerSettings={quizSettings!} />
+        ) : !isLoading && !generatedQuiz && (
             <div className="max-w-3xl mx-auto">
                 <Tabs defaultValue="topic" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
@@ -182,8 +191,8 @@ export default function GenerateForm() {
                                     )}
                                     />
                                     {renderTimerOptions(topicForm)}
-                                    <Button type="submit" className="w-full !mt-6" disabled={isLoading}>
-                                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                                    <Button type="submit" className="w-full !mt-6">
+                                        <Wand2 className="mr-2 h-4 w-4" />
                                         Generate Quiz
                                     </Button>
                                 </form>
@@ -219,8 +228,8 @@ export default function GenerateForm() {
                                     )}
                                     />
                                     {renderTimerOptions(pdfForm)}
-                                    <Button type="submit" className="w-full !mt-6" disabled={isLoading}>
-                                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                                    <Button type="submit" className="w-full !mt-6">
+                                        <Wand2 className="mr-2 h-4 w-4" />
                                         Generate Quiz
                                     </Button>
                                 </form>
@@ -229,16 +238,6 @@ export default function GenerateForm() {
                         </Card>
                     </TabsContent>
                 </Tabs>
-            </div>
-        ) : (
-            <QuizPlayer quiz={generatedQuiz} isGenerated={true} timerSettings={quizSettings!} />
-        )}
-
-
-        {isLoading && (
-            <div className="mt-8 text-center">
-                <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
-                <p className="mt-4 text-muted-foreground">Generating your quiz... This might take a moment.</p>
             </div>
         )}
     </div>
