@@ -85,22 +85,20 @@ export default function QuizPlayer({ quiz, isGenerated = false, timerSettings, i
     if (isFreeTrialQuiz) {
         useFreeGeneration();
     }
+    setScore(finalScore);
     setGameState('finished');
   }
 
   const handleNextQuestion = () => {
-    let currentScore = score;
     const isCorrect = selectedAnswers[currentQuestionIndex] === currentQuestion.correctAnswer;
-    if (isCorrect) {
-      currentScore = score + 1;
-      setScore(currentScore);
-    }
+    const newScore = isCorrect ? score + 1 : score;
 
     if (currentQuestionIndex < quiz.questions.length - 1) {
+      setScore(newScore);
       setCurrentQuestionIndex(prev => prev + 1);
       setTimeLeft(timerDuration);
     } else {
-      finishQuiz(currentScore);
+      finishQuiz(newScore);
     }
   };
   
