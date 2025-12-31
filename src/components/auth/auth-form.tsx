@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -28,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { FirebaseError } from 'firebase/app';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -57,20 +57,52 @@ export default function AuthForm() {
     defaultValues: { name: '', email: '', password: '' },
   });
 
-  const onLoginSubmit = (values: z.infer<typeof loginSchema>) => {
-    setIsSubmitting(true);
-    login(values.email.split('@')[0], values.email);
-    toast({ title: "Login Successful", description: "Welcome back!" });
-    router.push('/dashboard');
-    setIsSubmitting(false);
+  const handleAuthError = (error: any) => {
+    let message = 'An unexpected error occurred.';
+    if (error instanceof FirebaseError) {
+      switch (error.code) {
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+          message = 'Invalid email or password.';
+          break;
+        case 'auth/email-already-in-use':
+          message = 'This email is already registered.';
+          break;
+        case 'auth/weak-password':
+          message = 'The password is too weak.';
+          break;
+        default:
+          message = error.message;
+          break;
+      }
+    }
+    toast({ variant: 'destructive', title: 'Authentication Failed', description: message });
   };
 
-  const onSignupSubmit = (values: z.infer<typeof signupSchema>) => {
+  const onLoginSubmit = async (values: z.infer<typeof loginSchema>) => {
     setIsSubmitting(true);
-    signup(values.name, values.email);
-    toast({ title: "Account Created", description: "Welcome to QuizWhiz!" });
-    router.push('/dashboard');
-    setIsSubmitting(false);
+    try {
+      await login(values.email, values.password);
+      toast({ title: 'Login Successful', description: 'Welcome back!' });
+      router.push('/dashboard');
+    } catch (error) {
+      handleAuthError(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const onSignupSubmit = async (values: z.infer<typeof signupSchema>) => {
+    setIsSubmitting(true);
+    try {
+      await signup(values.name, values.email, values.password);
+      toast({ title: 'Account Created', description: 'Welcome to QuizWhiz!' });
+      router.push('/dashboard');
+    } catch (error) {
+      handleAuthError(error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

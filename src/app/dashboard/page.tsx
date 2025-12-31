@@ -9,38 +9,36 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Crown, Loader2 } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { user, isAuthenticated, isLoading } = useAuth() as any; // isLoading is not in type, but it's a good pattern
+  const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (typeof isLoading !== 'undefined' && !isLoading && !isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       router.push('/login');
     }
   }, [isAuthenticated, isLoading, router]);
 
-  if (typeof isLoading !== 'undefined' && (isLoading || !isAuthenticated || !user)) {
+  if (isLoading || !isAuthenticated || !user || !user.profile) {
     return (
       <div className="flex justify-center items-center min-h-[calc(100vh-8rem)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
   }
-  
-  if (!user) {
-    return null; // or some other placeholder
-  }
+
+  const userName = user.profile.username;
 
   return (
     <div className="container py-12 space-y-8">
       <div className="flex flex-col sm:flex-row gap-6 items-center">
         <Avatar className="h-24 w-24">
-          <AvatarImage src={`https://api.dicebear.com/8.x/initials/svg?seed=${user.name}`} alt={user.name} />
-          <AvatarFallback className="text-3xl">{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+          <AvatarImage src={`https://api.dicebear.com/8.x/initials/svg?seed=${userName}`} alt={userName} />
+          <AvatarFallback className="text-3xl">{userName.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
         <div>
-          <h1 className="text-3xl font-bold font-headline">Welcome back, {user.name}!</h1>
+          <h1 className="text-3xl font-bold font-headline">Welcome back, {userName}!</h1>
           <p className="text-muted-foreground text-lg">Here's a summary of your quizzing journey.</p>
-          {user.isPremium && (
+          {user.profile.premium && (
             <div className="flex items-center gap-2 mt-2 text-yellow-600 dark:text-yellow-400 font-semibold">
               <Crown className="h-5 w-5 fill-current" />
               <span>Premium Member</span>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -91,6 +90,9 @@ export default function Header() {
 
   const handleMobileLinkClick = () => setIsMobileMenuOpen(false);
 
+  const userName = user?.profile?.username || '';
+  const userEmail = user?.profile?.email || user?.firebaseUser?.email || '';
+
   return (
     <header className={cn(
         "sticky top-0 z-50 w-full transition-all duration-300",
@@ -108,19 +110,19 @@ export default function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={`https://api.dicebear.com/8.x/initials/svg?seed=${user.name}`} alt={user.name} />
-                    <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                    <AvatarImage src={`https://api.dicebear.com/8.x/initials/svg?seed=${userName}`} alt={userName} />
+                    <AvatarFallback>{userName.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                    <p className="text-sm font-medium leading-none">{userName}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{userEmail}</p>
                   </div>
                 </DropdownMenuLabel>
-                {user.isPremium && (
+                {user.profile?.premium && (
                     <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-yellow-600 dark:text-yellow-400">
                         <Crown className="h-4 w-4" />
                         <span>Premium Member</span>

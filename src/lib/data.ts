@@ -13,14 +13,6 @@ export type Quiz = {
   questions: Question[];
 };
 
-export type UserQuizHistory = {
-  quizId: string;
-  quizTitle: string;
-  score: number;
-  date: string;
-  category: string;
-};
-
 export const quizzes: Quiz[] = [
   {
     id: 'geography-1',
@@ -257,29 +249,5 @@ export const quizzes: Quiz[] = [
         correctAnswer: 'Modern',
       },
     ],
-  },
-];
-
-export const userQuizHistory: UserQuizHistory[] = [
-  {
-    quizId: 'geography-1',
-    quizTitle: 'World Capitals',
-    score: 80,
-    date: '2024-05-20',
-    category: 'Geography',
-  },
-  {
-    quizId: 'history-1',
-    quizTitle: 'Ancient Civilizations',
-    score: 90,
-    date: '2024-05-18',
-    category: 'History',
-  },
-  {
-    quizId: 'gk-1',
-    quizTitle: 'General Knowledge Challenge',
-    score: 70,
-    date: '2024-05-15',
-    category: 'General Knowledge',
   },
 ];

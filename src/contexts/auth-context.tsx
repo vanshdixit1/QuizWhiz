@@ -1,115 +1,151 @@
+'use client';
 
-"use client";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+  useCallback,
+} from 'react';
+import {
+  Auth,
+  User as FirebaseUser,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+} from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { useFirebase } from '@/firebase/provider';
+import { useDoc } from '@/firebase/firestore/use-doc';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-type UserQuizHistory = {
-    quizId: string;
-    quizTitle: string;
-    score: number;
-    totalQuestions: number;
-    date: string;
-    category: string;
+// Type for a single quiz attempt history item
+export type UserQuizHistory = {
+  quizId: string;
+  quizTitle: string;
+  score: number;
+  totalQuestions: number;
+  date: string;
+  category: string;
 };
 
-type User = {
-  name: string;
+// Type for the user profile stored in Firestore
+export type UserProfile = {
+  id: string;
+  username: string;
   email: string;
-  isPremium: boolean;
+  premium: boolean;
   hasUsedFreeGeneration: boolean;
+};
+
+// Combined user type for the context
+export type AppUser = {
+  firebaseUser: FirebaseUser;
+  profile: UserProfile | null;
   quizHistory: UserQuizHistory[];
 };
 
 type AuthContextType = {
-  user: User | null;
+  user: AppUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (name: string, email: string) => void;
-  signup: (name: string, email: string) => void;
+  signup: (name: string, email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  goPremium: () => void;
-  useFreeGeneration: () => void;
-  addQuizAttempt: (attempt: Omit<UserQuizHistory, 'date'>) => void;
+  addQuizAttempt: (attempt: Omit<UserQuizHistory, 'date'>) => Promise<void>;
+  useFreeGeneration: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { auth, firestore, isUserLoading: isFirebaseUserLoading, user: firebaseUser } = useFirebase();
+  const [appUser, setAppUser] = useState<AppUser | null>(null);
+
+  // Firestore hook to get the user's profile
+  const userProfileRef = useMemo(
+    () => (firestore && firebaseUser ? doc(firestore, 'users', firebaseUser.uid) : null),
+    [firestore, firebaseUser]
+  );
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+
+  // Firestore hook to get the user's quiz history
+  const quizHistoryRef = useMemo(
+    () => (firestore && firebaseUser ? collection(firestore, 'users', firebaseUser.uid, 'quizAttempts') : null),
+    [firestore, firebaseUser]
+  );
+  const { data: quizHistory, isLoading: isHistoryLoading } = useCollection<UserQuizHistory>(quizHistoryRef);
+
 
   useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem('quizwhiz_user');
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        if (typeof parsedUser.hasUsedFreeGeneration === 'undefined') {
-          parsedUser.hasUsedFreeGeneration = false;
-        }
-        if (!parsedUser.quizHistory) {
-          parsedUser.quizHistory = [];
-        }
-        setUser(parsedUser);
-      }
-    } catch (error) {
-      console.error("Failed to parse user from localStorage", error);
-      localStorage.removeItem('quizwhiz_user');
-    } finally {
-        setIsLoading(false);
-    }
-  }, []);
+    if (isFirebaseUserLoading || isProfileLoading || isHistoryLoading) return;
 
-  const updateUserInStateAndStorage = (updatedUser: User | null) => {
-    if (updatedUser) {
-        localStorage.setItem('quizwhiz_user', JSON.stringify(updatedUser));
+    if (firebaseUser && userProfile) {
+        setAppUser({
+            firebaseUser,
+            profile: userProfile,
+            quizHistory: quizHistory || [],
+        });
     } else {
-        localStorage.removeItem('quizwhiz_user');
+        setAppUser(null);
     }
-    setUser(updatedUser);
-  };
+  }, [firebaseUser, userProfile, isFirebaseUserLoading, isProfileLoading, quizHistory, isHistoryLoading]);
 
-  const login = (name: string, email: string) => {
-    const newUser: User = {
-      name,
+  const signup = async (username: string, email: string, password: string) => {
+    if (!auth || !firestore) throw new Error('Firebase not initialized');
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    const newUserProfile: UserProfile = {
+      id: user.uid,
+      username,
       email,
-      isPremium: false,
+      premium: false,
       hasUsedFreeGeneration: false,
-      quizHistory: [],
     };
-    updateUserInStateAndStorage(newUser);
+    await setDoc(doc(firestore, 'users', user.uid), newUserProfile);
+  };
+
+  const login = async (email: string, password: string) => {
+    if (!auth) throw new Error('Firebase not initialized');
+    await signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const logout = async () => {
+    if (!auth) throw new Error('Firebase not initialized');
+    await signOut(auth);
+  };
+
+  const addQuizAttempt = async (attempt: Omit<UserQuizHistory, 'date'>) => {
+    if (!appUser || !firestore) return;
+    const newAttempt = { ...attempt, date: new Date().toISOString() };
+    const attemptRef = doc(collection(firestore, `users/${appUser.firebaseUser.uid}/quizAttempts`));
+    await setDoc(attemptRef, newAttempt);
+  };
+
+  const useFreeGeneration = async () => {
+    if (!appUser || !appUser.profile || !firestore) return;
+    if (appUser.profile.premium) return; // Premium users don't use up a free generation
+
+    const userDocRef = doc(firestore, 'users', appUser.firebaseUser.uid);
+    await setDoc(userDocRef, { hasUsedFreeGeneration: true }, { merge: true });
   };
   
-  const signup = (name: string, email: string) => {
-    const newUser: User = { name, email, isPremium: false, hasUsedFreeGeneration: false, quizHistory: [] };
-    updateUserInStateAndStorage(newUser);
-  };
-
-  const logout = () => {
-    updateUserInStateAndStorage(null);
-  };
-  
-  const goPremium = () => {
-    if (user) {
-      updateUserInStateAndStorage({ ...user, isPremium: true });
-    }
-  };
-
-  const useFreeGeneration = () => {
-    if (user && !user.isPremium) {
-      updateUserInStateAndStorage({ ...user, hasUsedFreeGeneration: true });
-    }
-  };
-
-  const addQuizAttempt = (attempt: Omit<UserQuizHistory, 'date'>) => {
-    if (user) {
-        const newAttempt = { ...attempt, date: new Date().toISOString() };
-        const updatedHistory = [newAttempt, ...user.quizHistory];
-        updateUserInStateAndStorage({ ...user, quizHistory: updatedHistory });
-    }
-  };
+  const isLoading = isFirebaseUserLoading || isProfileLoading || isHistoryLoading;
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, signup, logout, goPremium, useFreeGeneration, addQuizAttempt }}>
+    <AuthContext.Provider
+      value={{
+        user: appUser ? { ...appUser, profile: { ...appUser.profile, name: appUser.profile?.username || '' } as any } : null,
+        isAuthenticated: !!appUser,
+        isLoading,
+        signup,
+        login,
+        logout,
+        addQuizAttempt,
+        useFreeGeneration,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -121,4 +157,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
+}
