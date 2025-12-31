@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, {
@@ -7,6 +8,7 @@ import React, {
   useEffect,
   ReactNode,
   useCallback,
+  useMemo,
 } from 'react';
 import {
   Auth,
@@ -15,9 +17,10 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection } from 'firebase/firestore';
 import { useFirebase } from '@/firebase/provider';
 import { useDoc } from '@/firebase/firestore/use-doc';
+import { useCollection } from '@/firebase/firestore/use-collection';
 
 // Type for a single quiz attempt history item
 export type UserQuizHistory = {
@@ -43,6 +46,8 @@ export type AppUser = {
   firebaseUser: FirebaseUser;
   profile: UserProfile | null;
   quizHistory: UserQuizHistory[];
+  isPremium: boolean;
+  hasUsedFreeGeneration: boolean;
 };
 
 type AuthContextType = {
@@ -85,6 +90,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             firebaseUser,
             profile: userProfile,
             quizHistory: quizHistory || [],
+            isPremium: userProfile.premium,
+            hasUsedFreeGeneration: userProfile.hasUsedFreeGeneration,
         });
     } else {
         setAppUser(null);
@@ -136,7 +143,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider
       value={{
-        user: appUser ? { ...appUser, profile: { ...appUser.profile, name: appUser.profile?.username || '' } as any } : null,
+        user: appUser,
         isAuthenticated: !!appUser,
         isLoading,
         signup,
