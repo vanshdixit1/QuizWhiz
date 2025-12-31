@@ -12,7 +12,7 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, Wand2, Clock, Mail } from 'lucide-react';
+import { Loader2, Wand2, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Quiz } from '@/lib/data';
 import QuizPlayer from '../quiz/quiz-player';
@@ -38,7 +38,7 @@ export default function GenerateForm() {
   const [generatedQuiz, setGeneratedQuiz] = useState<Quiz | null>(null);
   const [quizSettings, setQuizSettings] = useState<{timerEnabled: boolean, timerDuration: number} | null>(null);
   const { toast } = useToast();
-  const { user, useFreeGeneration, allowFreeGeneration } = useAuth();
+  const { user, useFreeGeneration } = useAuth();
 
   const topicForm = useForm<z.infer<typeof topicSchema>>({
     resolver: zodResolver(topicSchema),
@@ -151,95 +151,95 @@ export default function GenerateForm() {
       )}
     </>
   );
+  
+  if (isLoading) {
+    return (
+        <div className="mt-8 text-center">
+            <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
+            <p className="mt-4 text-muted-foreground">Generating your quiz... This might take a moment.</p>
+        </div>
+    );
+  }
+
+  if (generatedQuiz) {
+      return <QuizPlayer quiz={generatedQuiz} isGenerated={true} timerSettings={quizSettings!} />;
+  }
 
   return (
-    <div>
-        {isLoading && (
-            <div className="mt-8 text-center">
-                <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
-                <p className="mt-4 text-muted-foreground">Generating your quiz... This might take a moment.</p>
-            </div>
-        )}
-
-        {!isLoading && generatedQuiz ? (
-            <QuizPlayer quiz={generatedQuiz} isGenerated={true} timerSettings={quizSettings!} />
-        ) : !isLoading && !generatedQuiz && (
-            <div className="max-w-3xl mx-auto">
-                <Tabs defaultValue="topic" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="topic">From Topic</TabsTrigger>
-                        <TabsTrigger value="pdf">From PDF</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="topic">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Generate from Topic</CardTitle>
-                                <CardDescription>Enter a topic and let AI create a quiz for you.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <Form {...topicForm}>
-                                <form onSubmit={topicForm.handleSubmit(onTopicSubmit)} className="space-y-4">
-                                    <FormField
-                                    control={topicForm.control}
-                                    name="topic"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>Topic</FormLabel>
-                                        <FormControl><Input placeholder="e.g., The Solar System" {...field} /></FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                    />
-                                    {renderTimerOptions(topicForm)}
-                                    <Button type="submit" className="w-full !mt-6">
-                                        <Wand2 className="mr-2 h-4 w-4" />
-                                        Generate Quiz
-                                    </Button>
-                                </form>
-                                </Form>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                    <TabsContent value="pdf">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Generate from PDF</CardTitle>
-                                <CardDescription>Upload a PDF document to generate a quiz.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <Form {...pdfForm}>
-                                <form onSubmit={pdfForm.handleSubmit(onPdfSubmit)} className="space-y-4">
-                                    <FormField
-                                    control={pdfForm.control}
-                                    name="pdf"
-                                    render={({ field: { onChange, value, ...rest } }) => (
-                                        <FormItem>
-                                            <FormLabel>PDF Document</FormLabel>
-                                            <FormControl>
-                                                <Input 
-                                                    type="file" 
-                                                    accept="application/pdf"
-                                                    onChange={(e) => onChange(e.target.files ? e.target.files[0] : null)}
-                                                    {...rest}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                    />
-                                    {renderTimerOptions(pdfForm)}
-                                    <Button type="submit" className="w-full !mt-6">
-                                        <Wand2 className="mr-2 h-4 w-4" />
-                                        Generate Quiz
-                                    </Button>
-                                </form>
-                                </Form>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                </Tabs>
-            </div>
-        )}
+    <div className="max-w-3xl mx-auto">
+        <Tabs defaultValue="topic" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="topic">From Topic</TabsTrigger>
+                <TabsTrigger value="pdf">From PDF</TabsTrigger>
+            </TabsList>
+            <TabsContent value="topic">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Generate from Topic</CardTitle>
+                        <CardDescription>Enter a topic and let AI create a quiz for you.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Form {...topicForm}>
+                        <form onSubmit={topicForm.handleSubmit(onTopicSubmit)} className="space-y-4">
+                            <FormField
+                            control={topicForm.control}
+                            name="topic"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Topic</FormLabel>
+                                <FormControl><Input placeholder="e.g., The Solar System" {...field} /></FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                            {renderTimerOptions(topicForm)}
+                            <Button type="submit" className="w-full !mt-6">
+                                <Wand2 className="mr-2 h-4 w-4" />
+                                Generate Quiz
+                            </Button>
+                        </form>
+                        </Form>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="pdf">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Generate from PDF</CardTitle>
+                        <CardDescription>Upload a PDF document to generate a quiz.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Form {...pdfForm}>
+                        <form onSubmit={pdfForm.handleSubmit(onPdfSubmit)} className="space-y-4">
+                            <FormField
+                            control={pdfForm.control}
+                            name="pdf"
+                            render={({ field: { onChange, value, ...rest } }) => (
+                                <FormItem>
+                                    <FormLabel>PDF Document</FormLabel>
+                                    <FormControl>
+                                        <Input 
+                                            type="file" 
+                                            accept="application/pdf"
+                                            onChange={(e) => onChange(e.target.files ? e.target.files[0] : null)}
+                                            {...rest}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                            {renderTimerOptions(pdfForm)}
+                            <Button type="submit" className="w-full !mt-6">
+                                <Wand2 className="mr-2 h-4 w-4" />
+                                Generate Quiz
+                            </Button>
+                        </form>
+                        </Form>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
     </div>
   );
 }
