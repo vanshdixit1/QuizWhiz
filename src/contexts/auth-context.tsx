@@ -7,8 +7,6 @@ import React, {
   useState,
   useEffect,
   ReactNode,
-  useCallback,
-  useMemo,
 } from 'react';
 import {
   Auth,
@@ -18,7 +16,7 @@ import {
   signOut,
 } from 'firebase/auth';
 import { doc, setDoc, collection } from 'firebase/firestore';
-import { useFirebase } from '@/firebase/provider';
+import { useFirebase, useMemoFirebase } from '@/firebase/provider';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useCollection } from '@/firebase/firestore/use-collection';
 
@@ -68,14 +66,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [appUser, setAppUser] = useState<AppUser | null>(null);
 
   // Firestore hook to get the user's profile
-  const userProfileRef = useMemo(
+  const userProfileRef = useMemoFirebase(
     () => (firestore && firebaseUser ? doc(firestore, 'users', firebaseUser.uid) : null),
     [firestore, firebaseUser]
   );
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   // Firestore hook to get the user's quiz history
-  const quizHistoryRef = useMemo(
+  const quizHistoryRef = useMemoFirebase(
     () => (firestore && firebaseUser ? collection(firestore, 'users', firebaseUser.uid, 'quizAttempts') : null),
     [firestore, firebaseUser]
   );
