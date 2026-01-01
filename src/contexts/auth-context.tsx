@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, {
@@ -110,6 +111,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
     // Use non-blocking write for better UX and error handling
     setDocumentNonBlocking(doc(firestore, 'users', user.uid), newUserProfile, {});
+    
+    // Check if the signing-up user is the admin
+    if (email === 'vanshcheck@gmail.com') {
+      const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
+      setDocumentNonBlocking(adminRoleRef, { id: user.uid, username, email }, {});
+    }
   };
 
   const login = async (email: string, password: string) => {
