@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -62,6 +63,7 @@ export default function AuthForm() {
     if (error instanceof FirebaseError) {
       switch (error.code) {
         case 'auth/user-not-found':
+        case 'auth/invalid-credential':
           message = 'No account found with this email. Please sign up first.';
           break;
         case 'auth/wrong-password':
@@ -74,7 +76,7 @@ export default function AuthForm() {
           message = 'The password is too weak.';
           break;
         default:
-          message = error.message;
+          message = 'Invalid email or password. Please try again.';
           break;
       }
     }
