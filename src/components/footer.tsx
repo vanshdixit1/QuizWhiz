@@ -15,7 +15,7 @@ const Footer = () => {
       <div className="container flex items-center justify-between py-6">
         <Logo className="text-base" />
         <p className="text-sm text-muted-foreground">
-          © {currentYear || '2024'} QuizWhiz. All rights reserved.
+          © {currentYear || new Date().getFullYear()} QuizWhiz. All rights reserved.
         </p>
       </div>
     </footer>
