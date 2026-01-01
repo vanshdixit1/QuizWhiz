@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Quiz, Question } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import QuizResults from './quiz-results';
 import { cn } from '@/lib/utils';
-import { Timer, Clock } from 'lucide-react';
+import { Timer, Clock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 
 type QuizPlayerProps = {
@@ -25,7 +26,9 @@ type QuizPlayerProps = {
 type GameState = 'settings' | 'playing' | 'finished';
 
 export default function QuizPlayer({ quiz, isGenerated = false, timerSettings, isFreeTrialQuiz = false }: QuizPlayerProps) {
-  const { addQuizAttempt, useFreeGeneration } = useAuth();
+  const { user, addQuizAttempt, useFreeGeneration, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const router = useRouter();
+
   const [gameState, setGameState] = useState<GameState>(isGenerated ? 'playing' : 'settings');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
@@ -39,6 +42,12 @@ export default function QuizPlayer({ quiz, isGenerated = false, timerSettings, i
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
 
+  useEffect(() => {
+    if (!isAuthLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isAuthLoading, isAuthenticated, router]);
+  
   useEffect(() => {
     if (gameState !== 'playing' || !timerEnabled) return;
 
@@ -74,12 +83,14 @@ export default function QuizPlayer({ quiz, isGenerated = false, timerSettings, i
   };
 
   const finishQuiz = (finalScore: number) => {
+    if (!user) return; // Should not happen due to auth check
     addQuizAttempt({
         quizId: quiz.id,
         quizTitle: quiz.title,
         score: Math.round((finalScore / quiz.questions.length) * 100),
         totalQuestions: quiz.questions.length,
         category: quiz.category,
+        userId: user.firebaseUser.uid,
     });
     // If this was a free trial quiz, mark it as used now.
     if (isFreeTrialQuiz) {
@@ -101,6 +112,14 @@ export default function QuizPlayer({ quiz, isGenerated = false, timerSettings, i
       finishQuiz(newScore);
     }
   };
+
+  if (isAuthLoading || !isAuthenticated) {
+    return (
+      <div className="flex justify-center items-center min-h-[calc(100vh-8rem)]">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
   
   if (gameState === 'finished') {
     return <QuizResults score={score} totalQuestions={quiz.questions.length} quizTitle={quiz.title} />;

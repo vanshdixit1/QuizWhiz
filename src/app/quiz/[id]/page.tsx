@@ -13,5 +13,6 @@ export default function QuizPage() {
     notFound();
   }
 
+  // The authentication check is now handled inside QuizPlayer
   return <QuizPlayer quiz={quiz} />;
 }
