@@ -29,7 +29,7 @@ export type UserQuizHistory = {
   totalQuestions: number;
   date: string;
   category: string;
-  userId?: string; // Optional because older data might not have it
+  userId?: string; 
 };
 
 // Type for the user profile stored in Firestore
@@ -57,7 +57,7 @@ type AuthContextType = {
   signup: (name: string, email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  addQuizAttempt: (attempt: Omit<UserQuizHistory, 'date' | 'userId'>) => void;
+  addQuizAttempt: (attempt: Omit<UserQuizHistory, 'date'>) => void;
   useFreeGeneration: () => void;
 };
 
@@ -130,7 +130,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await signOut(auth);
   };
 
-  const addQuizAttempt = (attempt: Omit<UserQuizHistory, 'date' | 'userId'>) => {
+  const addQuizAttempt = (attempt: Omit<UserQuizHistory, 'date'>) => {
     if (!appUser || !firestore) return;
     const newAttempt = {
       ...attempt,
