@@ -62,6 +62,8 @@ export default function AuthForm() {
     if (error instanceof FirebaseError) {
       switch (error.code) {
         case 'auth/user-not-found':
+          message = 'No account found with this email. Please sign up first.';
+          break;
         case 'auth/wrong-password':
           message = 'Invalid email or password.';
           break;
