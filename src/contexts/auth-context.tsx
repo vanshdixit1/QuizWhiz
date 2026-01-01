@@ -131,7 +131,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const addQuizAttempt = (attempt: Omit<UserQuizHistory, 'date'>) => {
     if (!appUser || !firestore) return;
-    const newAttempt = { ...attempt, date: new Date().toISOString() };
+    const newAttempt = {
+      ...attempt,
+      date: new Date().toISOString(),
+      userId: appUser.firebaseUser.uid,
+    };
     const attemptRef = doc(collection(firestore, `users/${appUser.firebaseUser.uid}/quizAttempts`));
     // Use non-blocking write
     setDocumentNonBlocking(attemptRef, newAttempt, {});
