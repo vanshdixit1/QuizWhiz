@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -23,6 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 const navLinks = [
   { href: '/', label: 'Home' },
+  { href: '/dashboard', label: 'Dashboard', private: true },
   { href: '/quiz', label: 'Quizzes' },
   { href: '/generate', label: 'Generate' },
   { href: '/pricing', label: 'Pricing' },
@@ -32,26 +33,29 @@ const navLinks = [
 const NavLinks = ({ isMobile = false, onLinkClick }: { isMobile?: boolean, onLinkClick?: () => void }) => {
   const pathname = usePathname();
   const { user } = useAuth();
-  
+
   return (
     <>
-      {navLinks.map(link => (
-        <Link
-          key={link.href}
-          href={link.href}
-          onClick={onLinkClick}
-          className={cn(
-            'transition-colors hover:text-primary',
-            pathname === link.href ? 'text-primary font-semibold' : 'text-foreground/60',
-            isMobile ? 'text-lg w-full text-left p-2 rounded-md hover:bg-muted' : 'text-sm font-medium'
-          )}
-        >
-          <div className="flex items-center gap-2">
-              {link.label}
-              {link.href === '/generate' && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
-          </div>
-        </Link>
-      ))}
+      {navLinks.map(link => {
+        if (link.private && !user) return null;
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            onClick={onLinkClick}
+            className={cn(
+              'transition-colors hover:text-primary',
+              pathname === link.href ? 'text-primary font-semibold' : 'text-foreground/60',
+              isMobile ? 'text-lg w-full text-left p-2 rounded-md hover:bg-muted' : 'text-sm font-medium'
+            )}
+          >
+            <div className="flex items-center gap-2">
+                {link.label}
+                {link.href === '/generate' && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
+            </div>
+          </Link>
+        )
+      })}
     </>
   );
 }
