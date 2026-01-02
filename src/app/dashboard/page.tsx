@@ -1,58 +1,51 @@
 
-import { promises as fs } from 'fs';
-import path from 'path';
+import { promises as fs } from "fs";
+import path from "path";
 import { z } from "zod";
+
 import { columns } from "@/components/dashboard/columns";
 import { DataTable } from "@/components/dashboard/data-table";
-import { UserNav } from "@/components/dashboard/user-nav";
-import { taskSchema } from "@/components/dashboard/data/schema";
+import { quizSchema } from "@/components/dashboard/data/schema";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Simulate a database read for tasks.
-async function getTasks() {
+// Simulate a database read for quizzes.
+async function getQuizzes() {
   const data = await fs.readFile(
-    path.join(process.cwd(), "src/components/dashboard/data/tasks.json")
-  )
+    path.join(process.cwd(), "src/components/dashboard/data/quizzes.json")
+  );
 
-  const tasks = JSON.parse(data.toString())
+  const quizzes = JSON.parse(data.toString());
 
-  return z.array(taskSchema).parse(tasks)
+  return z.array(quizSchema).parse(quizzes);
 }
 
 export default async function TaskPage() {
-  const tasks = await getTasks()
+  const quizzes = await getQuizzes();
 
   return (
     <>
-      <div className="md:hidden">
-        <img
-          src="/examples/tasks-light.png"
-          width={1280}
-          height={998}
-          alt="Playground"
-          className="block dark:hidden"
-        />
-        <img
-          src="/examples/tasks-dark.png"
-          width={1280}
-          height={998}
-          alt="Playground"
-          className="hidden dark:block"
-        />
-      </div>
       <div className="hidden h-full flex-1 flex-col space-y-8 p-8 md:flex">
         <div className="flex items-center justify-between space-y-2">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Welcome back!</h2>
             <p className="text-muted-foreground">
-              Here&apos;s a list of your tasks for this month!
+              Here&apos;s a list of your previously attempted quizzes!
             </p>
           </div>
-          <div className="flex items-center space-x-2">
-            <UserNav />
-          </div>
         </div>
-        <DataTable data={tasks} columns={columns} />
+        <Tabs defaultValue="all-quizzes" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="all-quizzes">All Quizzes</TabsTrigger>
+            <TabsTrigger value="generated-quizzes">Generated Quizzes</TabsTrigger>
+          </TabsList>
+          <TabsContent value="all-quizzes">
+            <DataTable data={quizzes} columns={columns} />
+          </TabsContent>
+          <TabsContent value="generated-quizzes">
+            <DataTable data={quizzes.filter(q => q.isGenerated)} columns={columns} />
+          </TabsContent>
+        </Tabs>
       </div>
     </>
-  )
+  );
 }

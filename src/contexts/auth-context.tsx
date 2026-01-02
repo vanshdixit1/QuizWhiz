@@ -1,6 +1,8 @@
 
 'use client';
 
+declare const window: any;
+
 import React, {
   createContext,
   useContext,
@@ -140,6 +142,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const attemptRef = doc(collection(firestore, `users/${appUser.firebaseUser.uid}/quizAttempts`));
     // Use non-blocking write
     setDocumentNonBlocking(attemptRef, newAttempt, {});
+    window.electron.saveQuizAttempt(newAttempt);
   };
 
   const useFreeGeneration = () => {

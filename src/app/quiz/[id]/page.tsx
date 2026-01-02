@@ -1,18 +1,26 @@
+
 "use client";
 
 import { useParams, notFound } from 'next/navigation';
 import { quizzes } from '@/lib/data';
 import QuizPlayer from '@/components/quiz/quiz-player';
+import { useEffect, useState } from 'react';
 
 export default function QuizPage() {
   const params = useParams();
   const quizId = params.id as string;
-  const quiz = quizzes.find(q => q.id === quizId);
+  const [quiz, setQuiz] = useState(null);
+
+  useEffect(() => {
+    const foundQuiz = quizzes.find(q => q.id === quizId);
+    if (foundQuiz) {
+      setQuiz(foundQuiz);
+    }
+  }, [quizId]);
 
   if (!quiz) {
-    notFound();
+    return <div>Loading...</div>;
   }
 
-  // The authentication check is now handled inside QuizPlayer
   return <QuizPlayer quiz={quiz} />;
 }

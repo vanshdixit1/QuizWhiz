@@ -2,54 +2,39 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useRouter } from 'next/navigation';
-import type { Quiz, Question } from '@/lib/data';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import QuizResults from './quiz-results';
-import { cn } from '@/lib/utils';
-import { Timer, Clock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
+import { updateUserFreeGeneration } from '@/firebase/firestore/users';
+import { Clock, Check, X } from 'lucide-react';
+import type { Quiz } from '@/lib/data';
 
 type QuizPlayerProps = {
   quiz: Quiz;
   isGenerated?: boolean;
-  timerSettings?: { timerEnabled: boolean, timerDuration: number };
+  timerSettings?: {
+    timerEnabled: boolean;
+    timerDuration: number;
+  };
   isFreeTrialQuiz?: boolean;
 };
 
-type GameState = 'settings' | 'playing' | 'finished';
-
-export default function QuizPlayer({ quiz, isGenerated = false, timerSettings, isFreeTrialQuiz = false }: QuizPlayerProps) {
-  const { user, addQuizAttempt, useFreeGeneration, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+export default function QuizPlayer({ quiz, isGenerated = false, timerSettings = { timerEnabled: true, timerDuration: 15 }, isFreeTrialQuiz = false }: QuizPlayerProps) {
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedAnswers, setSelectedAnswers] = useState<{ [key: string]: string }>({});
+  const [timeLeft, setTimeLeft] = useState(timerSettings.timerEnabled ? timerSettings.timerDuration : null);
+  const { user } = useAuth();
   const router = useRouter();
 
-  const [gameState, setGameState] = useState<GameState>(isGenerated ? 'playing' : 'settings');
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
-  const [score, setScore] = useState(0);
-
-  // Settings
-  const [timerEnabled, setTimerEnabled] = useState(timerSettings?.timerEnabled ?? true);
-  const [timerDuration, setTimerDuration] = useState(timerSettings?.timerDuration ?? 15);
-  const [timeLeft, setTimeLeft] = useState(timerDuration);
-  
-  const currentQuestion = quiz.questions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
-
-  useEffect(() => {
-    if (!isAuthLoading && !isAuthenticated) {
-      router.push('/login');
+  const handleNextQuestion = () => {
+    if (currentQuestionIndex < quiz.questions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
     }
-  }, [isAuthLoading, isAuthenticated, router]);
-  
+  };
+
   useEffect(() => {
-    if (gameState !== 'playing' || !timerEnabled) return;
+    if (!timerSettings.timerEnabled || timeLeft === null) return;
 
     if (timeLeft === 0) {
       handleNextQuestion();
@@ -57,165 +42,91 @@ export default function QuizPlayer({ quiz, isGenerated = false, timerSettings, i
     }
 
     const timer = setInterval(() => {
-      setTimeLeft(prev => prev - 1);
+      setTimeLeft(prev => (prev !== null ? prev - 1 : null));
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, gameState, timerEnabled]);
+  }, [timeLeft, currentQuestionIndex, timerSettings.timerEnabled]);
   
-  useEffect(() => {
-    if (isGenerated && timerSettings) {
-        setTimerEnabled(timerSettings.timerEnabled);
-        setTimerDuration(timerSettings.timerDuration);
-        setTimeLeft(timerSettings.timerDuration);
-        setGameState('playing');
-    }
-  }, [isGenerated, timerSettings, quiz]);
+  if (!quiz || !quiz.questions || quiz.questions.length === 0) {
+    return <div>Quiz data is not available.</div>;
+  }
 
-
-  const handleStartQuiz = () => {
-    setTimeLeft(timerDuration);
-    setGameState('playing');
+  const handleAnswerSelect = (questionText: string, answer: string) => {
+    setSelectedAnswers(prev => ({ ...prev, [questionText]: answer }));
   };
 
-  const handleAnswerSelect = (answer: string) => {
-    setSelectedAnswers(prev => ({ ...prev, [currentQuestionIndex]: answer }));
+  const handleShowResults = async () => {
+    if (isFreeTrialQuiz && user) {
+        try {
+            await updateUserFreeGeneration(user.uid, true);
+        } catch (error) {
+            console.error("Failed to update user's free generation status:", error);
+        }
+    }
+    const params = new URLSearchParams();
+    params.set('answers', JSON.stringify(selectedAnswers));
+
+    if (isGenerated) {
+        params.set('isGenerated', 'true');
+        params.set('quizData', JSON.stringify(quiz));
+    }
+    router.push(`/quiz/${quiz.id}/results?${params.toString()}`);
   };
 
-  const finishQuiz = (finalScore: number) => {
-    if (!user) return; // Should not happen due to auth check
-    addQuizAttempt({
-        quizId: quiz.id,
-        quizTitle: quiz.title,
-        score: Math.round((finalScore / quiz.questions.length) * 100),
-        totalQuestions: quiz.questions.length,
-        category: quiz.category,
-        userId: user.firebaseUser.uid,
-    });
-    // If this was a free trial quiz, mark it as used now.
-    if (isFreeTrialQuiz) {
-        useFreeGeneration();
-    }
-    setScore(finalScore);
-    setGameState('finished');
-  }
+  const currentQuestion = quiz.questions[currentQuestionIndex];
+  const questionText = currentQuestion.question;
 
-  const handleNextQuestion = () => {
-    const isCorrect = selectedAnswers[currentQuestionIndex] === currentQuestion.correctAnswer;
-    const newScore = isCorrect ? score + 1 : score;
-
-    if (currentQuestionIndex < quiz.questions.length - 1) {
-      setScore(newScore);
-      setCurrentQuestionIndex(prev => prev + 1);
-      setTimeLeft(timerDuration);
-    } else {
-      finishQuiz(newScore);
-    }
+  const getOptionText = (option: any): string => {
+    return typeof option === 'string' ? option : option.text;
   };
-
-  if (isAuthLoading || !isAuthenticated) {
-    return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-8rem)]">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-      </div>
-    );
-  }
-  
-  if (gameState === 'finished') {
-    return <QuizResults score={score} totalQuestions={quiz.questions.length} quizTitle={quiz.title} />;
-  }
-
-  if (gameState === 'settings' && !isGenerated) {
-    return (
-      <div className="container flex items-center justify-center min-h-[calc(100vh-8rem)]">
-        <Card className="w-full max-w-lg">
-          <CardHeader>
-            <CardTitle className="text-2xl">{quiz.title}</CardTitle>
-            <CardDescription>{quiz.description}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="timer-switch" className="flex items-center gap-2 text-base">
-                <Clock className="h-5 w-5" /> Enable Timer
-              </Label>
-              <Switch id="timer-switch" checked={timerEnabled} onCheckedChange={setTimerEnabled} />
-            </div>
-            {timerEnabled && (
-              <div className="flex items-center justify-between">
-                <Label htmlFor="timer-duration" className="text-base">Timer Duration (seconds)</Label>
-                <Select value={String(timerDuration)} onValueChange={(val) => setTimerDuration(Number(val))}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Time" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="15">15</SelectItem>
-                    <SelectItem value="30">30</SelectItem>
-                    <SelectItem value="60">60</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <Button onClick={handleStartQuiz} className="w-full" size="lg">
-              Start Quiz
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
-    <div className="container py-12">
-      <Card className="max-w-3xl mx-auto">
+    <div className="max-w-4xl mx-auto p-4">
+      <Card>
         <CardHeader>
-            <div className='flex justify-between items-center mb-4'>
-                <CardTitle>{quiz.title}</CardTitle>
-                {timerEnabled && (
-                    <div className="flex items-center gap-2 font-mono text-lg text-primary">
-                        <Timer className="h-6 w-6" />
-                        <span>{timeLeft}s</span>
-                    </div>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-2xl font-bold">{quiz.title}</CardTitle>
+            {timerSettings.timerEnabled && timeLeft !== null && (
+              <div className="flex items-center gap-2 text-lg font-semibold">
+                <Clock className="h-6 w-6" />
+                <span>{timeLeft}s</span>
+              </div>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="text-lg font-semibold">
+            {questionText}
+          </div>
+          <ul className="space-y-2">
+            {currentQuestion.options.map((option, i) => {
+              const optionText = getOptionText(option);
+              const isSelected = selectedAnswers[questionText] === optionText;
+
+              return (
+                <li key={i}>
+                  <Button
+                    variant={isSelected ? "default" : "outline"}
+                    className="w-full justify-start h-auto whitespace-normal text-left"
+                    onClick={() => handleAnswerSelect(questionText, optionText)}
+                  >
+                    {optionText}
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        </CardContent>
+        <CardFooter className="flex justify-between items-center">
+            <p className="text-muted-foreground">Question {currentQuestionIndex + 1} of {quiz.questions.length}</p>
+            <div className="flex space-x-2">
+                <Button onClick={handleShowResults} variant="outline" size="lg">Submit</Button>
+                {currentQuestionIndex < quiz.questions.length - 1 && (
+                    <Button onClick={handleNextQuestion} size="lg">Next</Button>
                 )}
             </div>
-            <Progress value={progress} className="w-full" />
-            <p className="text-sm text-muted-foreground text-center mt-2">
-                Question {currentQuestionIndex + 1} of {quiz.questions.length}
-            </p>
-        </CardHeader>
-        <CardContent>
-          <div className="p-4 rounded-lg bg-muted/50 mb-8">
-            <p className="text-lg font-semibold text-center">{currentQuestion.question}</p>
-          </div>
-          <RadioGroup
-            value={selectedAnswers[currentQuestionIndex]}
-            onValueChange={handleAnswerSelect}
-            className="space-y-4"
-          >
-            {currentQuestion.options.map((option, index) => (
-              <Label
-                key={index}
-                htmlFor={`option-${index}`}
-                className={cn(
-                    "flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors",
-                    selectedAnswers[currentQuestionIndex] === option 
-                        ? "border-primary bg-primary/10" 
-                        : "hover:bg-muted"
-                )}
-              >
-                <RadioGroupItem value={option} id={`option-${index}`} />
-                <span className="text-base">{option}</span>
-              </Label>
-            ))}
-          </RadioGroup>
-          <Button 
-            onClick={handleNextQuestion} 
-            className="w-full mt-8" 
-            size="lg"
-            disabled={!selectedAnswers[currentQuestionIndex]}
-          >
-            {currentQuestionIndex < quiz.questions.length - 1 ? 'Next Question' : 'Finish Quiz'}
-          </Button>
-        </CardContent>
+        </CardFooter>
       </Card>
     </div>
   );
