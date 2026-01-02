@@ -75,6 +75,9 @@ export default function AuthForm() {
         case 'auth/weak-password':
           message = 'The password is too weak.';
           break;
+        case 'auth/operation-not-allowed':
+          message = 'Email/Password sign-in is not enabled for this project. Please contact support.';
+          break;
         default:
           message = 'Invalid email or password. Please try again.';
           break;
@@ -158,7 +161,7 @@ export default function AuthForm() {
       <TabsContent value="signup">
         <Card>
           <CardHeader>
-            <CardTitle>Create an Account</CardTitle>
+            <CardTitle>Welcome</CardTitle>
             <CardDescription>Join QuizWhiz to start your learning journey.</CardDescription>
           </CardHeader>
           <CardContent>

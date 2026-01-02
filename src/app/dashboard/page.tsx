@@ -1,61 +1,58 @@
-"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/auth-context';
-import AttemptedQuizzes from '@/components/dashboard/attempted-quizzes';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Crown, Loader2 } from 'lucide-react';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { z } from "zod";
+import { columns } from "@/components/dashboard/columns";
+import { DataTable } from "@/components/dashboard/data-table";
+import { UserNav } from "@/components/dashboard/user-nav";
+import { taskSchema } from "@/components/dashboard/data/schema";
 
-export default function DashboardPage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
+// Simulate a database read for tasks.
+async function getTasks() {
+  const data = await fs.readFile(
+    path.join(process.cwd(), "src/components/dashboard/data/tasks.json")
+  )
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/login');
-    }
-  }, [isAuthenticated, isLoading, router]);
+  const tasks = JSON.parse(data.toString())
 
-  if (isLoading || !isAuthenticated || !user || !user.profile) {
-    return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-8rem)]">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-      </div>
-    );
-  }
+  return z.array(taskSchema).parse(tasks)
+}
 
-  const userName = user.profile.username;
+export default async function TaskPage() {
+  const tasks = await getTasks()
 
   return (
-    <div className="container py-12 space-y-8">
-      <div className="flex flex-col sm:flex-row gap-6 items-center">
-        <Avatar className="h-24 w-24">
-          <AvatarImage src={`https://api.dicebear.com/8.x/initials/svg?seed=${userName}`} alt={userName} />
-          <AvatarFallback className="text-3xl">{userName.charAt(0).toUpperCase()}</AvatarFallback>
-        </Avatar>
-        <div>
-          <h1 className="text-3xl font-bold font-headline">Welcome back, {userName}!</h1>
-          <p className="text-muted-foreground text-lg">Here's a summary of your quizzing journey.</p>
-          {user.profile.premium && (
-            <div className="flex items-center gap-2 mt-2 text-yellow-600 dark:text-yellow-400 font-semibold">
-              <Crown className="h-5 w-5 fill-current" />
-              <span>Premium Member</span>
-            </div>
-          )}
-        </div>
+    <>
+      <div className="md:hidden">
+        <img
+          src="/examples/tasks-light.png"
+          width={1280}
+          height={998}
+          alt="Playground"
+          className="block dark:hidden"
+        />
+        <img
+          src="/examples/tasks-dark.png"
+          width={1280}
+          height={998}
+          alt="Playground"
+          className="hidden dark:block"
+        />
       </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Quiz History</CardTitle>
-          <CardDescription>Review your past performance and see how you've improved over time.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AttemptedQuizzes />
-        </CardContent>
-      </Card>
-    </div>
-  );
+      <div className="hidden h-full flex-1 flex-col space-y-8 p-8 md:flex">
+        <div className="flex items-center justify-between space-y-2">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Welcome back!</h2>
+            <p className="text-muted-foreground">
+              Here&apos;s a list of your tasks for this month!
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <UserNav />
+          </div>
+        </div>
+        <DataTable data={tasks} columns={columns} />
+      </div>
+    </>
+  )
 }

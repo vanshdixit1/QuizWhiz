@@ -4,7 +4,7 @@
 import { useAuth } from '@/contexts/auth-context';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '../ui/button';
-import { Check, Mail } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -38,16 +38,14 @@ const plans = [
 ]
 
 export default function PricingCards() {
-    const { user, isAuthenticated } = useAuth();
-    const router = useRouter();
+    const { user } = useAuth();
+    const { toast } = useToast();
 
     const handleSubscribeClick = () => {
-        if (!isAuthenticated) {
-            router.push('/login');
-            return;
-        }
-        // Redirect to email client to contact for payment
-        window.location.href = "mailto:dixitvansh140@gmail.com?subject=Inquiry%20about%20QuizWhiz%20Premium";
+        toast({
+          title: "Contact Us for Premium",
+          description: "Please email us at dixitvansh140@gmail.com to get your premium subscription.",
+        });
     }
 
     return (
